@@ -187,27 +187,48 @@ void Project::work_loop_()
                 << "\nwindow     " << wave_->window_width
                 );
 
-        // slices per update
-        size_t xstep = std::max((size_t)1, window_width() / num_bands() / 12),
-               x = 0;
+        // normalize or scale?
+        const float amp = band_amp_>0 ? band_amp_ : 1;
 
+        QElapsedTimer timer;
+        timer.start();
         float max_value = 0.000001;
-        while (x < num_grains() && run_)
+
+        // get each slice's band
+        for (size_t x=0; x < num_grains(); ++x)
         {
+            if (!run_)
+            {
+                SOM_DEBUG("break in spectral analyzis");
+                return;
+            }
+
+            // get band data and max-value
             max_value = std::max(
                     max_value,
-                    wave_->get_bands(x, xstep, band_amp_)
+                    wave_->get_bands(x, 1, amp)
                 );
 
             // callback
-            if (cb_bands_) cb_bands_();
+            if (timer.elapsed() > 200)
+            {
+                if (cb_bands_) cb_bands_();
+                timer.start();
+            }
 
-            x += xstep;
         }
 
-        //wave_->normalize(max_value);
-        wave_->shape(1.f, band_exp_);
+        // normalize or re-scale
 
+        if (band_amp_ <= 0)
+            wave_->normalize(max_value, band_exp_);
+        else
+            wave_->shape(1.f, band_exp_);
+
+        // final update
+        if (cb_bands_) cb_bands_();
+
+        // wave is prepared
         wave_changed_ = false;
     }
 

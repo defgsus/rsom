@@ -32,6 +32,11 @@ signals:
 public slots:
 
 protected:
+    /** (re-)set the wave parameters using Properties */
+    void set_wave_();
+    /** (re-)set the wave parameters using Properties */
+    void set_som_();
+
     Project * project_;
     WaveView * waveview_;
     SomView * somview_;
@@ -39,8 +44,17 @@ protected:
     // properties
     Property
         *wave_bands_,
-        *wave_minf_,
-        *wave_maxf_;
+        *wave_freq_,
+        *wave_grain_size_,
+        *wave_window_,
+        *wave_band_norm_,
+        *wave_band_amp_,
+        *wave_band_exp_,
+
+        *som_size_,
+        *som_seed_,
+        *som_alpha_,
+        *som_radius_;
 };
 
 #endif // PROJECTVIEW_H

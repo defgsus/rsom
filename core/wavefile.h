@@ -58,7 +58,7 @@ class Wave
     float get_bands(size_t x = 0, size_t num = 0, float amp = 1.f);
 
     /** finalize data, previously gathered with get_bands() */
-    void normalize(float max_value);
+    void normalize(float max_value, float exponent = 1.f);
 
     /** shape and clamp band data. alternative to normalize() */
     void shape(float amplitude, float exponent);

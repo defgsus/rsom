@@ -57,9 +57,10 @@ public:
     /** set name of project */
     void name(const std::string& project_name);
 
-    /** set spectrum parameters, restarts ALL */
+    /** set spectrum parameters, restarts ALL.
+        if band_amp_ == 0, bands will be normalized. */
     void set(size_t nr_bands, float min_freq, float max_freq, size_t grain_size, size_t window_width,
-             float band_amp_, float band_exp_);
+             float band_amp_ = 0.f, float band_exp_ = 1.f);
 
     /** set som parameters, restarts the SOM */
     void set_som(size_t sizex, size_t sizey, int rand_seed);

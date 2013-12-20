@@ -160,21 +160,20 @@ float Wave::get_bands(size_t xstart_, size_t xlen_, float amp)
     return ma;
 }
 
-void Wave::normalize(float ma)
+void Wave::normalize(float ma, float exp)
 {
-    SOM_DEBUG("Wave::normalize(" << ma << ")");
+    SOM_DEBUG("Wave::normalize(" << ma << ", " << exp << ")");
 
-    // normalize as a whole and shape logarithmically
+    // normalize as a whole and shape
     for (size_t i=0; i<nr_grains; ++i)
         for (size_t j=0; j<nr_bands; ++j)
-            band[i][j] = band[i][j]/ma;
+            band[i][j] = powf(band[i][j]/ma, exp);
 }
 
 void Wave::shape(float amp, float exp)
 {
     SOM_DEBUG("Wave::shape(" << amp << ", " << exp << ")");
 
-    // normalize as a whole and shape logarithmically
     for (size_t i=0; i<nr_grains; ++i)
         for (size_t j=0; j<nr_bands; ++j)
             band[i][j] = powf(std::max(0.f,std::min(1.f,

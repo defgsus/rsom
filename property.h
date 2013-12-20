@@ -66,8 +66,17 @@ public:
 
     Property(const QString& id, const QString& name, const QString& help);
 
+    /** single bool */
+    void init(bool value);
+
+    /** single int */
     void init(int   min_val, int   max_val, int   value);
+    /** two ints */
+    void init(int   min_val, int   max_val, int   value0, int   value1);
+    /** single float */
     void init(float min_val, float max_val, float value);
+    /** two floats */
+    void init(float min_val, float max_val, float value0, float value1);
 
     // --------- callbacks ----------
 

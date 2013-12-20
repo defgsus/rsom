@@ -17,12 +17,47 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
     QFrame(parent),
     project_    (p)
 {
-    // properties
-    wave_bands_ = new Property("wave_bands", "number spec. bands", "...");
+    // --- properties ---
+
+    SOM_DEBUG("ProjectView::ProjectView:: creating properties");
+
+    wave_bands_ = new Property("wave_bands", "number bands", "...");
     wave_bands_->init(1, 100000, project_->num_bands());
 
+    wave_freq_ = new Property("wave_freq", "frequency range", "...");
+    wave_freq_->init(0.0001f, 100000.f, project_->wave().min_freq, project_->wave().max_freq);
 
-    SOM_DEBUG("ProjectView:: building widgets");
+    wave_grain_size_ = new Property("wave_grain_size", "grain size", "...");
+    wave_grain_size_->init(1, 2<<16, project_->wave().grain_size);
+
+    wave_window_ = new Property("wave_window_width", "window width", "...");
+    wave_window_->init(1, 2<<16, project_->wave().window_width);
+
+    wave_band_norm_ = new Property("wave_band_norm", "normalize\nbands", "...");
+    wave_band_norm_->init(false);
+
+    wave_band_amp_ = new Property("wave_band_amp", "band amp", "...");
+    wave_band_amp_->init(0.0001f, 1000.f, project_->band_amp());
+
+    wave_band_exp_ = new Property("wave_band_exp", "band exp", "...");
+    wave_band_exp_->init(0.0001f, 100.f, project_->band_exponent());
+
+    // --- som properties
+
+    som_size_ = new Property("som_size", "som size", "...");
+    som_size_->init(1, 2<<16, project_->som_sizex(), project_->som_sizey());
+
+    som_seed_ = new Property("som_seed", "random seed", "...");
+    som_seed_->init(-(2<<16), 2<<16, project_->som_seed());
+
+    som_alpha_ = new Property("som_alpha", "alpha", "...");
+    som_alpha_->init(0.f, 1.f, project_->som_alpha());
+
+    som_radius_ = new Property("som_radius", "radius", "...");
+    som_radius_->init(0.f, 1.f, project_->som_radius());
+
+
+    SOM_DEBUG("ProjectView::ProjectView:: building widgets");
 
     setFrameStyle(QFrame::Panel | QFrame::Raised);
     setLineWidth(2);
@@ -85,58 +120,30 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
         l1 = new QHBoxLayout(0);
         l0->addLayout(l1);
         {
-
-
-            #define SOM_SPIN(spin_, class_, name_str_, v_, min_, max_) \
-            class_ * spin_; \
-            { \
-                auto l2 = new QVBoxLayout(0); \
-                l1->addLayout(l2); \
-                    auto label = new QLabel(this); \
-                    label->setText(name_str_); \
-                    l2->addWidget(label); \
-                    spin_ = new class_(this); \
-                    l2->addWidget(spin_); \
-                    if (auto dbl = dynamic_cast<QDoubleSpinBox*>(spin_)) \
-                        dbl->setDecimals(4); \
-                    spin_->setMinimum(min_); \
-                    spin_->setMaximum(max_); \
-                    spin_->setValue(v_); \
-            }
-
-            SOM_SPIN(spin_bands,  QSpinBox, "number bands",   project_->wave().nr_bands,     1, 2<<16);
-            SOM_SPIN(spin_minf,   QSpinBox, "low frequency",  project_->wave().min_freq,     1, 2<<16);
-            SOM_SPIN(spin_maxf,   QSpinBox, "high frequency", project_->wave().max_freq,     1, 2<<16);
-            SOM_SPIN(spin_grains, QSpinBox, "grain size",     project_->wave().grain_size,   1, 2<<16);
-            SOM_SPIN(spin_window, QSpinBox, "window width",   project_->wave().window_width, 1, 2<<16);
+            // create analyzer widgets
+            const Property::LayoutType lt = Property::V_LABEL_WIDGET;
+            wave_bands_->     createWidget(this, l1, lt);
+            wave_freq_->      createWidget(this, l1, lt);
+            wave_grain_size_->createWidget(this, l1, lt);
+            wave_window_->    createWidget(this, l1, lt);
             l1->addSpacing(10);
-            SOM_SPIN(spin_band_amp,  QDoubleSpinBox, "amp",   project_->band_amp(),          0.0001, 100);
-            SOM_SPIN(spin_band_exp,  QDoubleSpinBox, "amp exponent",
-                                                              project_->band_exponent(),     0.0001, 100);
-            #undef SOM_SPIN
+            wave_band_norm_-> createWidget(this, l1, lt);
+            wave_band_amp_->  createWidget(this, l1, lt);
+            wave_band_exp_->  createWidget(this, l1, lt);
 
-            wave_bands_->createWidget(this, l1, Property::V_LABEL_WIDGET);
-
-            // on-change function
-            const auto func( [=](int)
+            // connect them
+            wave_bands_->     cb_value_changed(std::bind(&ProjectView::set_wave_, this));
+            wave_freq_->      cb_value_changed(std::bind(&ProjectView::set_wave_, this));
+            wave_grain_size_->cb_value_changed(std::bind(&ProjectView::set_wave_, this));
+            wave_window_->    cb_value_changed(std::bind(&ProjectView::set_wave_, this));
+            wave_band_amp_->  cb_value_changed(std::bind(&ProjectView::set_wave_, this));
+            wave_band_exp_->  cb_value_changed(std::bind(&ProjectView::set_wave_, this));
+            wave_band_norm_-> cb_value_changed([=]()
             {
-                project_->set(spin_bands->value(),
-                              spin_minf->value(),
-                              spin_maxf->value(),
-                              spin_grains->value(),
-                              spin_window->value(),
-                              spin_band_amp->value(),
-                              spin_band_exp->value()
-                              );
-            } );
-
-            connect(spin_bands,  static_cast<void(QSpinBox::*)(int)>(&QSpinBox::valueChanged), func);
-            connect(spin_band_amp,  static_cast<void(QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), func);
-            connect(spin_band_exp,  static_cast<void(QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), func);
-            connect(spin_minf,   static_cast<void(QSpinBox::*)(int)>(&QSpinBox::valueChanged), func);
-            connect(spin_maxf,   static_cast<void(QSpinBox::*)(int)>(&QSpinBox::valueChanged), func);
-            connect(spin_grains, static_cast<void(QSpinBox::*)(int)>(&QSpinBox::valueChanged), func);
-            connect(spin_window, static_cast<void(QSpinBox::*)(int)>(&QSpinBox::valueChanged), func);
+                // disable amp when normalized
+                wave_band_amp_->setActive(!wave_band_norm_->v_bool[0]);
+                set_wave_();
+            });
 
             l1->addStretch(2);
         }
@@ -146,13 +153,13 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
         l0->addWidget(waveview_);
 
         // connect wave update
-        project_->cb_wave_loaded( [=]()
+        project_->cb_wave_loaded( [&]()
         {
             waveview_->setWave(&project_->wave());
             waveview_->update();
         } );
-        project_->cb_bands(       [=](){ waveview_->update(); } );
-
+        // connect band calc update
+        project_->cb_bands(       [&](){ waveview_->update(); } );
 
         // ---- SOM view ----
 
@@ -167,6 +174,19 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             auto l2 = new QVBoxLayout(0);
             l1->addLayout(l2);
 
+                // create som parameter widgets
+                const Property::LayoutType lt = Property::H_WIDGET_LABEL;
+                som_size_->     createWidget(this, l2, lt);
+                som_seed_->     createWidget(this, l2, lt);
+                som_alpha_->    createWidget(this, l2, lt);
+                som_radius_->   createWidget(this, l2, lt);
+
+                // connect
+                som_size_->   cb_value_changed(std::bind(&ProjectView::set_som_, this));
+                som_seed_->   cb_value_changed(std::bind(&ProjectView::set_som_, this));
+                som_alpha_->  cb_value_changed( [=]() { project_->set_som_alpha(som_alpha_->v_float[0]); } );
+                som_radius_-> cb_value_changed( [=]() { project_->set_som_radius(som_radius_->v_float[0]); } );
+                /*
                 // labelled spinbox
                 #define SOM_SPIN(spin_, class_, name_str_, v_, min_, max_) \
                 class_ * spin_; \
@@ -213,26 +233,28 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
                                     { project_->set_som_radius(spin_radius->value()); } );
 
                 auto label = new QLabel();
-
+                */
                 l2->addStretch(2);
 
                 // when SOM is allocated
-                project_->cb_som_ready( [=]()
+                project_->cb_som_ready( [&]()
                 {
                     somview_->setSom(&project_->som());
                 } );
                 // when SOM is updated
-                project_->cb_som(       [=]()
+                project_->cb_som(       [&]()
                 {
-                    label->setText(QString::fromStdString(project_->som().info_str()));
+                    //label->setText(QString::fromStdString(project_->som().info_str()));
                     somview_->update();
                 } );
+
         }
 }
 
 
 bool ProjectView::loadWave(/*const std::string& fn*/)
 {
+    // disconnect views
     waveview_->setWave(0);
     somview_->setSom(0);
 
@@ -240,5 +262,40 @@ bool ProjectView::loadWave(/*const std::string& fn*/)
             "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/ldmvoice/danaykroyd.wav"
             )) return false;
 
+
     return true;
 }
+
+void ProjectView::set_wave_()
+{
+    SOM_DEBUG("ProjectView::set_wave_()");
+
+    bool n = wave_band_norm_->v_bool[0];
+
+    project_->set(
+            wave_bands_->v_int[0],
+            wave_freq_->v_float[0],
+            wave_freq_->v_float[1],
+            wave_grain_size_->v_int[0],
+            wave_window_->v_int[0],
+            n? 0.f : wave_band_amp_->v_float[0],
+            wave_band_exp_->v_float[0]
+            );
+
+}
+
+void ProjectView::set_som_()
+{
+    SOM_DEBUG("ProjectView::set_som_()");
+
+    // disconnect view
+    somview_->setSom(0);
+
+    project_->set_som(
+            som_size_->v_int[0],
+            som_size_->v_int[1],
+            som_seed_->v_int[0]
+        );
+
+}
+

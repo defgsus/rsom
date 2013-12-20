@@ -30,14 +30,12 @@ int Property::name2int(const QString& n)
 }
 
 
-void Property::init(float min_val, float max_val, float value)
+void Property::init(bool v0)
 {
-    type = FLOAT;
-    min_float = min_val;
-    max_float = max_val;
+    type = BOOL;
     dim = 1;
-    v_float.resize(dim);
-    v_float[0] = value;
+    v_bool.resize(dim);
+    v_bool[0] = v0;
 }
 
 void Property::init(int min_val, int max_val, int value)
@@ -50,13 +48,44 @@ void Property::init(int min_val, int max_val, int value)
     v_int[0] = value;
 }
 
+void Property::init(int min_val, int max_val, int v0, int v1)
+{
+    type = INT;
+    min_int = min_val;
+    max_int = max_val;
+    dim = 2;
+    v_int.resize(dim);
+    v_int[0] = v0;
+    v_int[1] = v1;
+}
+
+void Property::init(float min_val, float max_val, float v0)
+{
+    type = FLOAT;
+    min_float = min_val;
+    max_float = max_val;
+    dim = 1;
+    v_float.resize(dim);
+    v_float[0] = v0;
+}
+
+void Property::init(float min_val, float max_val, float v0, float v1)
+{
+    type = FLOAT;
+    min_float = min_val;
+    max_float = max_val;
+    dim = 2;
+    v_float.resize(dim);
+    v_float[0] = v0;
+    v_float[1] = v1;
+}
 
 
 // ---------------------------- widgets -----------------------------
 
 void Property::onValueChanged_()
 {
-    SOM_DEBUG("Property::onValueChanged_()");
+    //SOM_DEBUG("Property::onValueChanged_()");
 
     if (cb_value_changed_) cb_value_changed_();
 }
@@ -89,6 +118,7 @@ void Property::createWidget(QWidget * parent, QLayout * l0, LayoutType ltype)
             addLayout_(l0, l1);
             getLabel_(parent, l1);
             for (size_t i=0; i<dim; ++i) getWidget_(parent, l1, i);
+            l1->addStretch(2);
         } break;
 
         case H_WIDGET_LABEL:
@@ -97,6 +127,7 @@ void Property::createWidget(QWidget * parent, QLayout * l0, LayoutType ltype)
             addLayout_(l0, l1);
             for (size_t i=0; i<dim; ++i) getWidget_(parent, l1, i);
             getLabel_(parent, l1);
+            //l1->addStretch(2);
         } break;
     }
 
@@ -142,6 +173,7 @@ QWidget * Property::getWidget_(QWidget * parent, QLayout * l0, size_t i)
             });
             // get destroy event
             parent->connect(cb, &QWidget::destroyed, [=](QObject * obj) { SOM_DEBUG("---- destroyed " << obj); });
+
             widgets_.push_back(cb);
             return cb;
         }
@@ -150,8 +182,8 @@ QWidget * Property::getWidget_(QWidget * parent, QLayout * l0, size_t i)
         {
             auto spin = new QSpinBox(parent);
             l0->addWidget(spin);
-            spin->setMinimum(min_float);
-            spin->setMaximum(max_float);
+            spin->setMinimum(min_int);
+            spin->setMaximum(max_int);
             spin->setValue(v_int[i]);
 
             // get change event
@@ -173,6 +205,13 @@ QWidget * Property::getWidget_(QWidget * parent, QLayout * l0, size_t i)
             spin->setMinimum(min_float);
             spin->setMaximum(max_float);
             spin->setValue(v_float[i]);
+
+            // get change event
+            parent->connect(spin, static_cast<void(QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), [=]()
+            {
+                v_float[i] = spin->value();
+                onValueChanged_();
+            });
 
             widgets_.push_back(spin);
             return spin;
