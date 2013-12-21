@@ -80,6 +80,7 @@ void Som::init(Wave& wave)
         else
             srand(rand_seed);
 
+        // randomly take apart the spectral data
         for (size_t i=0; i<size; ++i)
             for (size_t j=0; j<dim; ++j)
                 data[i][j] = 0.7*wave.band[rand()%wave.nr_grains][j];
@@ -184,16 +185,16 @@ float Som::get_distance(size_t i1, size_t i2)
 
 void Som::set_umap(float value)
 {
-    SOM_DEBUG("Som::set_umap(" << value << ")");
+    SOM_DEBUGN("Som::set_umap(" << value << ")");
 
-    for (size_t i=0; i<size; ++i)
-        umap[i] = value;
+    for (auto i=umap.begin(); i!=umap.end(); ++i)
+        *i = value;
 }
 
 // calculates the distance to neighbours for each cell
 void Som::calc_umap()
 {
-    SOM_DEBUG("Som::calc_umap()");
+    SOM_DEBUGN("Som::calc_umap()");
 
     set_umap();
 
@@ -203,7 +204,7 @@ void Som::calc_umap()
     for (size_t j=1; j<sizey-1; ++j)
     for (size_t i=1; i<sizex-1; ++i)
     {
-        int k = j*size + i;
+        int k = j*sizex + i;
         float d =
               get_distance(k, (j-1)*sizex + i - 1) * 0.75
             + get_distance(k, (j-1)*sizex + i)
@@ -222,7 +223,7 @@ void Som::calc_umap()
     for (size_t i=0; i<sizex; ++i)
     {
         size_t
-            k = j*size + i,
+            k = j*sizex + i,
             j0 = (j==0)? sizey-1 : j-1,
             j1 = (j==sizey-1)? 0 : j+1,
             i0 = (i==0)? sizex-1 : i-1,

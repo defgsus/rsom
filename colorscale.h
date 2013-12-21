@@ -25,11 +25,35 @@ struct ColorScale
         }
     }
 
-    // get the color for value 'f' (0-1)
+    /* get the color for value 'f' (0-1) */
     QColor get(const float f) const
     {
         const int i = std::max(0, std::min(255, (int)(f * 255.f + 0.5f) ));
         return color_map[i];
+    }
+
+    /** get a color from a number of vectors */
+    QColor get_spectral(const float * f, size_t num) const
+    {
+        if (!num) return QColor(0,0,0);
+
+        float r=0, g=0, b=0;
+        for (size_t k=0; k<num; ++k)
+        {
+            const float
+                t = (float)k/(num-1),
+                v = f[k];
+            r += v * (1.f - t);
+            g += v * std::max(0.f, fabsf(0.5f - t));
+            b += v * t;
+        }
+        const float a = 255.f / num * 1.5f;
+
+        return QColor(
+               std::min(255, (int)(r * a)),
+               std::min(255, (int)(g * a)),
+               std::min(255, (int)(b * a))
+               );
     }
 };
 

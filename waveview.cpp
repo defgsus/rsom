@@ -13,12 +13,13 @@
 
 WaveView::WaveView(QWidget *parent) :
     QFrame(parent),
-    wave_   (0)
+    wave_   (0),
+    draw_spec_colors_ (false)
 {
     setFrameStyle(QFrame::Panel | QFrame::Sunken);
     setLineWidth(1);
 
-    setFixedSize(700,300);
+    setFixedSize(1024,300);
 }
 
 
@@ -76,15 +77,29 @@ void WaveView::paint_bands()
     qreal sx = (qreal)w / wave_->nr_grains + 1,
           sy = (qreal)h / wave_->nr_bands + 1;
 
-    for (size_t x=0; x<wave_->nr_grains; ++x)
-    for (size_t y=0; y<wave_->nr_bands; ++y)
-    {
-        p.setBrush(QBrush(colors_.get(wave_->band[x][y])));
+    if (!draw_spec_colors_)
+        for (size_t x=0; x<wave_->nr_grains; ++x)
+        for (size_t y=0; y<wave_->nr_bands; ++y)
+        {
+            p.setBrush(QBrush(colors_.get(wave_->band[x][y])));
 
-        p.drawRect( (qreal)x / wave_->nr_grains * w + 1,
-                    (1.0 - (qreal)y / wave_->nr_bands) * h - sy + 2,
-                    sx,sy);
+            p.drawRect( (qreal)x / wave_->nr_grains * w + 1,
+                        (1.0 - (qreal)y / wave_->nr_bands) * h - sy + 2,
+                        sx,sy);
 
-    }
+        }
+    else
+        for (size_t x=0; x<wave_->nr_grains; ++x)
+        for (size_t y=0; y<wave_->nr_bands; ++y)
+        {
+            p.setBrush(QBrush(
+                colors_.get_spectral(&wave_->band[x][0], wave_->nr_bands)
+                       ));
+
+            p.drawRect( (qreal)x / wave_->nr_grains * w + 1,
+                        (1.0 - (qreal)y / wave_->nr_bands) * h - sy + 2,
+                        sx,sy);
+
+        }
 
 }

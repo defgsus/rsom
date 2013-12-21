@@ -24,6 +24,8 @@ public:
     {
         /** draw a single band */
         PM_Band,
+        /** draw something like the spectral color */
+        PM_MultiBand,
         /** draw the umap (whatever is in there) */
         PM_UMap
     };
@@ -39,7 +41,7 @@ public:
     /** Sets what to paint. */
     void paintMode(PaintMode mode) { pmode_ = mode; }
     /** Selects PM_Band, and sets the band to draw */
-    void paintBand(size_t band_nr);
+    void paintBandNr(size_t band_nr);
 
 signals:
 
@@ -49,6 +51,7 @@ protected:
     virtual void paintEvent(QPaintEvent *);
 
     void paint_band_();
+    void paint_multi_band_();
     void paint_umap_();
 
     const Som * som_;

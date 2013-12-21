@@ -28,6 +28,11 @@ public:
         is connected to this View. Set to NULL to disconnect. */
     void setWave(const Wave * wave) { wave_ = wave; }
 
+    // ------- properties ------
+
+    bool draw_spec_colors() const { return draw_spec_colors_; }
+    void draw_spec_colors(bool do_it) { draw_spec_colors_ = do_it; update(); }
+
 signals:
 
 public slots:
@@ -41,6 +46,8 @@ protected:
     const Wave * wave_;
 
     ColorScale colors_;
+
+    bool draw_spec_colors_;
 };
 
 #endif // WAVEVIEW_H

@@ -35,6 +35,7 @@ public:
 
     const Wave&        wave()           const { return *wave_; }
     const Som&         som()            const { return *som_; }
+          Som&         som()                  { return *som_; }
 
     size_t             num_bands()      const { return wave_->nr_bands; }
     size_t             num_grains()     const { return wave_->nr_grains; }

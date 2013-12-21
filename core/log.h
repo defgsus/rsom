@@ -6,6 +6,13 @@
 #define SOM_DEBUG(stream_arg__) \
     std::cerr << stream_arg__ << "\n"
 
+/** noisy debug */
+#if (0)
+#   define SOM_DEBUGN(stream_arg__) SOM_DEBUG(stream_arg__)
+#else
+#   define SOM_DEBUGN(stream_arg__)
+#endif
+
 #define SOM_ERROR(stream_arg__) \
     SOM_DEBUG("*error* " << stream_arg__)
 

@@ -78,6 +78,18 @@ public:
     /** two floats */
     void init(float min_val, float max_val, float value0, float value1);
 
+    /** one select item */
+    void init(const std::vector<int>& item_values,
+              const QStringList& item_ids,
+              const QStringList& item_names, int value);
+
+    /** set new maximum/maximum value (update widget) */
+    void setMinMax(int new_min_value, int new_max_value);
+    void setMinMax(float new_min_value, float new_max_value);
+    /** set new maximum value (update widget) */
+    void setMax(int new_max_value) { setMinMax(min_int, new_max_value); }
+    void setMax(float new_max_value) { setMinMax(min_float, new_max_value); }
+
     // --------- callbacks ----------
 
     /** Sets the callback for when the user changed the value of the widget.
@@ -88,10 +100,11 @@ public:
 
     /** Creates a widget for the Property into the layout.
         The widget remains associated with the Property until
-        disconnectWidget() is called. */
+        disconnectWidget() is called, or the widget is deleted. */
     void createWidget(QWidget * parent, QLayout * into_layout, LayoutType ltype = LABEL_WIDGET);
 
-    /** Removes the association with the widget. */
+    /** Removes the association with the widget.
+        This happens automatically on destruction of the widget. */
     void disconnectWidget();
 
     /** Sets the associated widget to the current Property value. */

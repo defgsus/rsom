@@ -13,6 +13,14 @@
 #include <QFrame>
 #include <QLabel>
 
+enum SomDrawMode
+{
+    SDM_SINGLE_BAND,
+    SDM_MULTI_BAND,
+    /* let this be the first of all modes that need the umap. (or change ProjectView::need_umap_) */
+    SDM_UMAP
+};
+
 ProjectView::ProjectView(Project * p, QWidget *parent) :
     QFrame(parent),
     project_    (p)
@@ -42,6 +50,9 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
     wave_band_exp_ = new Property("wave_band_exp", "band exp", "...");
     wave_band_exp_->init(0.0001f, 100.f, project_->band_exponent());
 
+    wave_spec_colors_ = new Property("wave_draw_spec_colors", "draw spec.\ncolors", "...");
+    wave_spec_colors_->init(false);
+
     // --- som properties
 
     som_size_ = new Property("som_size", "som size", "...");
@@ -56,6 +67,16 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
     som_radius_ = new Property("som_radius", "radius", "...");
     som_radius_->init(0.f, 1.f, project_->som_radius());
 
+    som_dmode_ = new Property("som_draw_mode", "draw mode", "...");
+    som_dmode_->init(
+            { SDM_SINGLE_BAND, SDM_MULTI_BAND, SDM_UMAP },
+            { "single_band", "multi_band", "umap" },
+            { "single band", "spectral color", "neighbour distance" },
+            SDM_SINGLE_BAND
+                );
+
+    som_band_nr_ = new Property("som_band_nr", "band index", "...");
+    som_band_nr_->init(0, 0, 0);
 
     SOM_DEBUG("ProjectView::ProjectView:: building widgets");
 
@@ -115,42 +136,66 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
 
             l1->addStretch(2);
 
-        // ---- analyze settings ----
+
+        // ---- WAVE VIEW ----
+
+        waveview_ = new WaveView(this);
 
         l1 = new QHBoxLayout(0);
         l0->addLayout(l1);
         {
-            // create analyzer widgets
-            const Property::LayoutType lt = Property::V_LABEL_WIDGET;
-            wave_bands_->     createWidget(this, l1, lt);
-            wave_freq_->      createWidget(this, l1, lt);
-            wave_grain_size_->createWidget(this, l1, lt);
-            wave_window_->    createWidget(this, l1, lt);
-            l1->addSpacing(10);
-            wave_band_norm_-> createWidget(this, l1, lt);
-            wave_band_amp_->  createWidget(this, l1, lt);
-            wave_band_exp_->  createWidget(this, l1, lt);
+            // -- view properties --
 
-            // connect them
-            wave_bands_->     cb_value_changed(std::bind(&ProjectView::set_wave_, this));
-            wave_freq_->      cb_value_changed(std::bind(&ProjectView::set_wave_, this));
-            wave_grain_size_->cb_value_changed(std::bind(&ProjectView::set_wave_, this));
-            wave_window_->    cb_value_changed(std::bind(&ProjectView::set_wave_, this));
-            wave_band_amp_->  cb_value_changed(std::bind(&ProjectView::set_wave_, this));
-            wave_band_exp_->  cb_value_changed(std::bind(&ProjectView::set_wave_, this));
-            wave_band_norm_-> cb_value_changed([=]()
+            auto l2 = new QVBoxLayout(0);
+            l1->addLayout(l2);
             {
-                // disable amp when normalized
-                wave_band_amp_->setActive(!wave_band_norm_->v_bool[0]);
-                set_wave_();
-            });
+                // create analyzer widgets
+                const Property::LayoutType lt = Property::V_LABEL_WIDGET;
+                wave_spec_colors_-> createWidget(this, l2, lt);
+            }
 
-            l1->addStretch(2);
+            l1->addSpacing(20);
+
+            l1->addWidget( waveview_ );
+
+            l2 = new QVBoxLayout(0);
+            l1->addLayout(l2);
+            {
+                // -- analyze properties --
+
+                const Property::LayoutType lt = Property::H_WIDGET_LABEL;
+                wave_bands_->       createWidget(this, l2, lt);
+                wave_freq_->        createWidget(this, l2, lt);
+                wave_grain_size_->  createWidget(this, l2, lt);
+                wave_window_->      createWidget(this, l2, lt);
+                l2->addSpacing(10);
+                wave_band_norm_->   createWidget(this, l2, lt);
+                wave_band_amp_->    createWidget(this, l2, lt);
+                wave_band_exp_->    createWidget(this, l2, lt);
+
+                l2->addStretch(2);
+
+            }
         }
-        // ---- wave view ----
 
-        waveview_ = new WaveView(this);
-        l0->addWidget(waveview_);
+        // --- connect wave properties ---
+
+        wave_bands_->     cb_value_changed(std::bind(&ProjectView::set_wave_, this));
+        wave_freq_->      cb_value_changed(std::bind(&ProjectView::set_wave_, this));
+        wave_grain_size_->cb_value_changed(std::bind(&ProjectView::set_wave_, this));
+        wave_window_->    cb_value_changed(std::bind(&ProjectView::set_wave_, this));
+        wave_band_amp_->  cb_value_changed(std::bind(&ProjectView::set_wave_, this));
+        wave_band_exp_->  cb_value_changed(std::bind(&ProjectView::set_wave_, this));
+        wave_band_norm_-> cb_value_changed([=]()
+        {
+            // disable amp when normalized
+            wave_band_amp_->setActive(!wave_band_norm_->v_bool[0]);
+            set_wave_();
+        });
+
+        wave_spec_colors_->cb_value_changed( [=](){ waveview_->draw_spec_colors(wave_spec_colors_->v_bool[0]); });
+
+        // -- callbacks --
 
         // connect wave update
         project_->cb_wave_loaded( [&]()
@@ -161,96 +206,104 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
         // connect band calc update
         project_->cb_bands(       [&](){ waveview_->update(); } );
 
+
+
+
         // ---- SOM view ----
 
         l1 = new QHBoxLayout(0);
         l0->addLayout(l1);
         {
             somview_ = new SomView(this);
-            l1->addWidget(somview_);
 
-            // --- SOM parameters ---
+            // --- SOM view parameters ---
 
             auto l2 = new QVBoxLayout(0);
             l1->addLayout(l2);
+            {
+                const Property::LayoutType lt = Property::H_WIDGET_LABEL;
+                som_dmode_->    createWidget(this, l2, lt);
+                som_band_nr_->  createWidget(this, l2, lt);
 
-                // create som parameter widgets
+                l2->addStretch(2);
+            }
+
+            l1->addSpacing(20);
+
+            l1->addWidget(somview_);
+
+            // --- SOM parameters ----
+
+            l2 = new QVBoxLayout(0);
+            l1->addLayout(l2);
+            {
                 const Property::LayoutType lt = Property::H_WIDGET_LABEL;
                 som_size_->     createWidget(this, l2, lt);
                 som_seed_->     createWidget(this, l2, lt);
                 som_alpha_->    createWidget(this, l2, lt);
                 som_radius_->   createWidget(this, l2, lt);
 
-                // connect
-                som_size_->   cb_value_changed(std::bind(&ProjectView::set_som_, this));
-                som_seed_->   cb_value_changed(std::bind(&ProjectView::set_som_, this));
-                som_alpha_->  cb_value_changed( [=]() { project_->set_som_alpha(som_alpha_->v_float[0]); } );
-                som_radius_-> cb_value_changed( [=]() { project_->set_som_radius(som_radius_->v_float[0]); } );
-                /*
-                // labelled spinbox
-                #define SOM_SPIN(spin_, class_, name_str_, v_, min_, max_) \
-                class_ * spin_; \
-                { \
-                    auto l3 = new QHBoxLayout(0); \
-                    l2->addLayout(l3); \
-                        spin_ = new class_(this); \
-                        l3->addWidget(spin_); \
-                        spin_->setMinimum(min_); \
-                        spin_->setMaximum(max_); \
-                        spin_->setValue(v_); \
-                        auto label = new QLabel(this); \
-                        label->setText(name_str_); \
-                        l3->addWidget(label); \
-                }
-
-                SOM_SPIN(spin_x,      QSpinBox,       "size x",       project_->som_sizex(),   1, 2<<16);
-                SOM_SPIN(spin_y,      QSpinBox,       "size y",       project_->som_sizey(),   1, 2<<16);
-                SOM_SPIN(spin_seed,   QSpinBox,       "random seed",  project_->som_seed(),    -(2<<16), (2<<16));
-                SOM_SPIN(spin_alpha,  QDoubleSpinBox, "alpha",        project_->som_alpha(),   0, 100);
-                SOM_SPIN(spin_radius, QDoubleSpinBox, "radius",       project_->som_radius(),  0, 100);
-
-                #undef SOM_SPIN
-
-                // reinit som
-                const auto func_setsom( [=](int)
-                {
-                    somview_->setSom(0);
-
-                    project_->set_som(
-                        spin_x->value(),
-                        spin_y->value(),
-                        spin_seed->value()
-                        );
-
-                } );
-
-                connect(spin_x,      static_cast<void(QSpinBox::*)(int)>(&QSpinBox::valueChanged), func_setsom);
-                connect(spin_y,      static_cast<void(QSpinBox::*)(int)>(&QSpinBox::valueChanged), func_setsom);
-                connect(spin_seed,   static_cast<void(QSpinBox::*)(int)>(&QSpinBox::valueChanged), func_setsom);
-                connect(spin_alpha,  static_cast<void(QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), [=]()
-                                    { project_->set_som_alpha(spin_alpha->value()); } );
-                connect(spin_radius,  static_cast<void(QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), [=]()
-                                    { project_->set_som_radius(spin_radius->value()); } );
-
-                auto label = new QLabel();
-                */
                 l2->addStretch(2);
-
-                // when SOM is allocated
-                project_->cb_som_ready( [&]()
-                {
-                    somview_->setSom(&project_->som());
-                } );
-                // when SOM is updated
-                project_->cb_som(       [&]()
-                {
-                    //label->setText(QString::fromStdString(project_->som().info_str()));
-                    somview_->update();
-                } );
-
+            }
         }
+
+        // -- connect Properties --
+
+        som_size_->   cb_value_changed(std::bind(&ProjectView::set_som_, this));
+        som_seed_->   cb_value_changed(std::bind(&ProjectView::set_som_, this));
+        som_alpha_->  cb_value_changed( [=]() { project_->set_som_alpha(som_alpha_->v_float[0]); } );
+        som_radius_-> cb_value_changed( [=]() { project_->set_som_radius(som_radius_->v_float[0]); } );
+
+        som_dmode_->  cb_value_changed( [&]() { setSomPaintMode_(); });
+        som_band_nr_->cb_value_changed( [=]() { somview_->paintBandNr(som_band_nr_->v_int[0]); });
+
+        // -- callbacks --
+
+        // when SOM is allocated
+        project_->cb_som_ready( [&]()
+        {
+            somview_->setSom(&project_->som());
+        } );
+        // when SOM is updated
+        project_->cb_som(       [&]()
+        {
+            //label->setText(QString::fromStdString(project_->som().info_str()));
+            if (need_umap_())
+                project_->som().calc_umap();
+            somview_->update();
+        } );
+
 }
 
+void ProjectView::setSomPaintMode_()
+{
+    const int pmode = som_dmode_->v_int[0];
+
+    SOM_DEBUG("ProjectView::setSomPaintMode_(" << pmode << ")");
+
+    if (pmode == SDM_SINGLE_BAND)
+    {
+        som_band_nr_->setMax(project_->som().dim);
+        som_band_nr_->setActive(true);
+    }
+    else
+        som_band_nr_->setActive(false);
+
+    switch (pmode)
+    {
+        case SDM_SINGLE_BAND:   somview_->paintMode(SomView::PM_Band); break;
+        case SDM_MULTI_BAND:    somview_->paintMode(SomView::PM_MultiBand); break;
+
+        default:                somview_->paintMode(SomView::PM_UMap); break;
+    }
+
+}
+
+bool ProjectView::need_umap_()
+{
+    return
+        som_dmode_->v_int[0] >= SDM_UMAP;
+}
 
 bool ProjectView::loadWave(/*const std::string& fn*/)
 {

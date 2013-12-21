@@ -6,7 +6,9 @@
 #include <QCheckBox>
 #include <QSpinBox>
 #include <QDoubleSpinBox>
+#include <QListWidget>
 #include <QLayout>
+#include <QSizePolicy>
 
 Property::Property(const QString& id, const QString& name, const QString& help)
     :   type    (UNKNOWN),
@@ -79,6 +81,77 @@ void Property::init(float min_val, float max_val, float v0, float v1)
     v_float[0] = v0;
     v_float[1] = v1;
 }
+
+void Property::init(const std::vector<int>& item_values,
+                    const QStringList& item_ids,
+                    const QStringList& item_names, int value)
+{
+    type = SELECT;
+    this->item_ids = item_ids;
+    this->item_names = item_names;
+    this->item_values = item_values;
+    dim = 1;
+    v_int.resize(dim);
+    v_int[0] = value;
+}
+
+
+
+void Property::setMinMax(int new_min_value, int new_max_value)
+{
+    foreach (i, widgets_)
+    switch (type)
+    {
+        case INT:
+            min_int = new_min_value;
+            max_int = new_max_value;
+            if (auto spin = dynamic_cast<QSpinBox*>(*i))
+            {
+                spin->setMinimum(min_int);
+                spin->setMaximum(max_int);
+            }
+        break;
+
+        case FLOAT:
+            min_float = new_min_value;
+            max_float = new_max_value;
+            if (auto spin = dynamic_cast<QDoubleSpinBox*>(*i))
+            {
+                spin->setMinimum(min_float);
+                spin->setMaximum(max_float);
+            }
+        break;
+    }
+}
+
+void Property::setMinMax(float new_min_value, float new_max_value)
+{
+    foreach (i, widgets_)
+    switch (type)
+    {
+        case INT:
+            min_int = new_min_value;
+            max_int = new_max_value;
+            if (auto spin = dynamic_cast<QSpinBox*>(*i))
+            {
+                spin->setMinimum(min_int);
+                spin->setMaximum(max_int);
+            }
+        break;
+
+        case FLOAT:
+            min_float = new_min_value;
+            max_float = new_max_value;
+            if (auto spin = dynamic_cast<QDoubleSpinBox*>(*i))
+            {
+                spin->setMinimum(min_float);
+                spin->setMaximum(max_float);
+            }
+        break;
+    }
+}
+
+
 
 
 // ---------------------------- widgets -----------------------------
@@ -155,6 +228,8 @@ QWidget * Property::getLabel_(QWidget * parent, QLayout * l0)
 
 QWidget * Property::getWidget_(QWidget * parent, QLayout * l0, size_t i)
 {
+    QWidget * widget = 0;
+
     switch (type)
     {
         case UNKNOWN: return 0;
@@ -171,11 +246,10 @@ QWidget * Property::getWidget_(QWidget * parent, QLayout * l0, size_t i)
                 v_bool[i] = cb->isChecked();
                 onValueChanged_();
             });
-            // get destroy event
-            parent->connect(cb, &QWidget::destroyed, [=](QObject * obj) { SOM_DEBUG("---- destroyed " << obj); });
 
             widgets_.push_back(cb);
-            return cb;
+            widget = cb;
+            break;
         }
 
         case INT:
@@ -194,7 +268,8 @@ QWidget * Property::getWidget_(QWidget * parent, QLayout * l0, size_t i)
             });
 
             widgets_.push_back(spin);
-            return spin;
+            widget = spin;
+            break;
         }
 
         case FLOAT:
@@ -214,17 +289,64 @@ QWidget * Property::getWidget_(QWidget * parent, QLayout * l0, size_t i)
             });
 
             widgets_.push_back(spin);
-            return spin;
+            widget = spin;
+            break;
+        }
+
+        case SELECT:
+        {
+            // create list widget
+            auto list = new QListWidget(parent);
+            l0->addWidget(list);
+
+            // add items
+            for (size_t k=0; k<item_values.size(); ++k)
+            {
+                list->addItem(item_names[k]);
+                // select the one
+                if (v_int[i] == item_values[k])
+                    list->setCurrentRow(k);
+            }
+            /// @todo nicer list height deduction
+            list->setFixedHeight(60);
+            list->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+
+            // get change event
+            parent->connect(list, &QListWidget::currentItemChanged, [=](QListWidgetItem*, QListWidgetItem*)
+            {
+                if (list->currentRow() >= 0
+                        && list->currentRow() < (int)item_values.size())
+                {
+                    v_int[i] = item_values[list->currentRow()];
+                    onValueChanged_();
+                }
+                else SOM_ERROR("unknown item index " << list->currentRow()
+                               << " for Property '" << id.toStdString() << "'");
+            });
+
+            widget = list;
+            break;
         }
 
     }
 
-    return 0; /* compiler shutup */
+    // can't be actually
+    if (!widget) return 0;
+
+    // get destroy event
+    parent->connect(widget, &QWidget::destroyed, [=](QObject * obj)
+    {
+        SOM_DEBUG("Property widget '" << id.toStdString() << "'destroyed " << obj);
+        disconnectWidget();
+    } );
+
+    return widget;
 }
 
 void Property::disconnectWidget()
 {
     widgets_.clear();
+    cb_value_changed_ = 0;
 }
 
 void Property::updateWidget()
@@ -236,7 +358,7 @@ void Property::updateWidget()
         switch (type)
         {
             case BOOL:
-                static_cast<QCheckBox*>(widgets_[i])->setChecked(v_int[i]);
+                static_cast<QCheckBox*>(widgets_[i])->setChecked(v_bool[i]);
             break;
 
             case INT:
@@ -246,6 +368,18 @@ void Property::updateWidget()
             case FLOAT:
                 static_cast<QDoubleSpinBox*>(widgets_[i])->setValue(v_float[i]);
             break;
+
+            case SELECT:
+            {
+                auto list = static_cast<QListWidget*>(widgets_[i]);
+                // find the row for the value
+                for (size_t k=0; k<item_values.size(); ++k)
+                if (item_values[k] == v_int[i])
+                {
+                    list->setCurrentRow(k);
+                    break;
+                }
+            } break;
         }
     }
 }

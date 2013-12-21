@@ -37,6 +37,12 @@ protected:
     /** (re-)set the wave parameters using Properties */
     void set_som_();
 
+    /** update SomView */
+    void setSomPaintMode_();
+
+    /** determine if umap must be calculated */
+    bool need_umap_();
+
     Project * project_;
     WaveView * waveview_;
     SomView * somview_;
@@ -50,11 +56,14 @@ protected:
         *wave_band_norm_,
         *wave_band_amp_,
         *wave_band_exp_,
+        *wave_spec_colors_,
 
         *som_size_,
         *som_seed_,
         *som_alpha_,
-        *som_radius_;
+        *som_radius_,
+        *som_dmode_,
+        *som_band_nr_;
 };
 
 #endif // PROJECTVIEW_H
