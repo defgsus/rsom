@@ -38,6 +38,9 @@ public:
         is connected to this View. Set to NULL to disconnect. */
     void setSom(const Som * som) { som_ = som; }
 
+    /** set scale for colors */
+    void paintMultiplier(float pm) { paint_mult_ = pm; }
+
     /** Sets what to paint. */
     void paintMode(PaintMode mode) { pmode_ = mode; }
     /** Selects PM_Band, and sets the band to draw */
@@ -58,6 +61,7 @@ protected:
 
     PaintMode pmode_;
     size_t band_sel_;
+    float paint_mult_;
 
     ColorScale colors_;
 };

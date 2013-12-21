@@ -33,7 +33,7 @@ struct ColorScale
     }
 
     /** get a color from a number of vectors */
-    QColor get_spectral(const float * f, size_t num) const
+    QColor get_spectral(const float * f, size_t num, float amp = 1.f) const
     {
         if (!num) return QColor(0,0,0);
 
@@ -47,7 +47,7 @@ struct ColorScale
             g += v * std::max(0.f, fabsf(0.5f - t));
             b += v * t;
         }
-        const float a = 255.f / num * 1.5f;
+        const float a = 255.f / num * amp;
 
         return QColor(
                std::min(255, (int)(r * a)),

@@ -18,7 +18,8 @@ enum SomDrawMode
     SDM_SINGLE_BAND,
     SDM_MULTI_BAND,
     /* let this be the first of all modes that need the umap. (or change ProjectView::need_umap_) */
-    SDM_UMAP
+    SDM_UMAP,
+    SDM_IMAP
 };
 
 ProjectView::ProjectView(Project * p, QWidget *parent) :
@@ -76,14 +77,19 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
 
     som_dmode_ = new Property("som_draw_mode", "draw mode", "...");
     som_dmode_->init(
-            { SDM_SINGLE_BAND, SDM_MULTI_BAND, SDM_UMAP },
-            { "single_band", "multi_band", "umap" },
-            { "single band", "spectral color", "neighbour distance" },
+            { SDM_SINGLE_BAND, SDM_MULTI_BAND, SDM_UMAP, SDM_IMAP },
+            { "single_band", "multi_band", "umap", "imap" },
+            { "single band", "spectral color", "neighbour distance", "grain index" },
             SDM_SINGLE_BAND
                 );
 
     som_band_nr_ = new Property("som_band_nr", "band index", "...");
     som_band_nr_->init(0, 0, 0);
+
+    som_mult_ = new Property("som_paint_mult", "color scale", "...");
+    som_mult_->init(0.0001f, 1000.f, 1.f);
+
+
 
     SOM_DEBUG("ProjectView::ProjectView:: building widgets");
 
@@ -231,6 +237,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
                 const Property::LayoutType lt = Property::H_WIDGET_LABEL;
                 som_dmode_->    createWidget(this, l2, lt);
                 som_band_nr_->  createWidget(this, l2, lt);
+                som_mult_->     createWidget(this, l2, lt);
 
                 l2->addStretch(2);
             }
@@ -268,6 +275,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
 
         som_dmode_->      cb_value_changed( [&]() { setSomPaintMode_(); });
         som_band_nr_->    cb_value_changed( [=]() { somview_->paintBandNr(som_band_nr_->v_int[0]); });
+        som_mult_->       cb_value_changed( [=]() { somview_->paintMultiplier(som_mult_->v_float[0]); });
 
         // -- callbacks --
 
@@ -283,8 +291,11 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
         project_->cb_som(       [&]()
         {
             //label->setText(QString::fromStdString(project_->som().info_str()));
-            if (need_umap_())
+            if (need_imap_())
+                project_->som().calc_imap();
+            else if (need_umap_())
                 project_->som().calc_umap();
+
             somview_->update();
         } );
 
@@ -319,6 +330,12 @@ bool ProjectView::need_umap_()
 {
     return
         som_dmode_->v_int[0] >= SDM_UMAP;
+}
+
+bool ProjectView::need_imap_()
+{
+    return
+        som_dmode_->v_int[0] == SDM_IMAP;
 }
 
 bool ProjectView::loadWave(/*const std::string& fn*/)

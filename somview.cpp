@@ -10,7 +10,8 @@ SomView::SomView(QWidget * parent)
     :   QFrame  (parent),
         som_    (0),
         pmode_  (PM_Band),
-        band_sel_(0)
+        band_sel_(0),
+        paint_mult_(1.f)
 {
     SOM_DEBUG("SomView::SomView()");
 
@@ -95,7 +96,7 @@ void SomView::paint_multi_band_()
     {
         // get spectral color from vector
         p.setBrush(QBrush(
-            colors_.get_spectral(&som_->data[y*som_->sizex+x][0], som_->dim)
+            colors_.get_spectral(&som_->data[y*som_->sizex+x][0], som_->dim, paint_mult_)
                    ));
 
         p.drawRect( (qreal)x / som_->sizex * w + frameWidth(),
@@ -121,7 +122,7 @@ void SomView::paint_umap_()
     for (size_t y=0; y<som_->sizey; ++y)
     for (size_t x=0; x<som_->sizex; ++x)
     {
-        p.setBrush(QBrush(colors_.get(som_->umap[y*som_->sizex+x])));
+        p.setBrush(QBrush(colors_.get(paint_mult_ * som_->umap[y*som_->sizex+x])));
 
         p.drawRect( (qreal)x / som_->sizex * w + frameWidth(),
                     (qreal)y / som_->sizey * h + frameWidth(),
@@ -130,5 +131,6 @@ void SomView::paint_umap_()
     }
 
 }
+
 
 

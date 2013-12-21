@@ -42,6 +42,8 @@ protected:
 
     /** determine if umap must be calculated */
     bool need_umap_();
+    /** determine if imap must be calculated */
+    bool need_imap_();
 
     Project * project_;
     WaveView * waveview_;
@@ -65,7 +67,8 @@ protected:
         *som_alpha_,
         *som_radius_,
         *som_dmode_,
-        *som_band_nr_;
+        *som_band_nr_,
+        *som_mult_;
 };
 
 #endif // PROJECTVIEW_H
