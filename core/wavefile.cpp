@@ -105,6 +105,7 @@ float Wave::get_bands(size_t xstart_, size_t xlen_, float amp)
 {
     if (!nr_grains) return 0.000001;
 
+    // get window
     size_t xstart = 0, xend = nr_grains;
     if (xstart_ || xlen_)
     {
@@ -112,17 +113,6 @@ float Wave::get_bands(size_t xstart_, size_t xlen_, float amp)
         xend = std::min(xend, xstart_ + xlen_);
     }
 
-    /*
-    SOM_LOG("analyzing bands"
-            << "\nbands      " << nr_bands
-            << "\nmin freq   " << min_freq
-            << "\nmax freq   " << max_freq
-            << "\ngrains     " << nr_grains
-            << "\ngrain size " << grain_size
-            << "\nwindow     " << window_width
-            << "\nrange      " << xstart << " - " << xend
-            );
-    */
 
     float ma = 0.0001;
 

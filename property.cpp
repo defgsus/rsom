@@ -15,7 +15,8 @@ Property::Property(const QString& id, const QString& name, const QString& help)
         id      (id),
         name    (name),
         help    (help),
-        dim     (0)
+        dim     (0),
+        active_ (true)
 {
     SOM_DEBUG("Property::Property(" << id.toStdString() << ", " << name.toStdString() << ")");
 }
@@ -99,55 +100,30 @@ void Property::init(const std::vector<int>& item_values,
 
 void Property::setMinMax(int new_min_value, int new_max_value)
 {
-    foreach (i, widgets_)
-    switch (type)
-    {
-        case INT:
-            min_int = new_min_value;
-            max_int = new_max_value;
-            if (auto spin = dynamic_cast<QSpinBox*>(*i))
-            {
-                spin->setMinimum(min_int);
-                spin->setMaximum(max_int);
-            }
-        break;
+    if (type != INT) return;
 
-        case FLOAT:
-            min_float = new_min_value;
-            max_float = new_max_value;
-            if (auto spin = dynamic_cast<QDoubleSpinBox*>(*i))
-            {
-                spin->setMinimum(min_float);
-                spin->setMaximum(max_float);
-            }
-        break;
+    min_int = new_min_value;
+    max_int = new_max_value;
+
+    for (auto i = widgets_.begin(); i!=widgets_.end(); ++i)
+    if (auto spin = dynamic_cast<QSpinBox*>(*i))
+    {
+        spin->setMinimum(min_int);
+        spin->setMaximum(max_int);
     }
 }
 
 void Property::setMinMax(float new_min_value, float new_max_value)
 {
-    foreach (i, widgets_)
-    switch (type)
-    {
-        case INT:
-            min_int = new_min_value;
-            max_int = new_max_value;
-            if (auto spin = dynamic_cast<QSpinBox*>(*i))
-            {
-                spin->setMinimum(min_int);
-                spin->setMaximum(max_int);
-            }
-        break;
+    if (type != FLOAT) return;
+    min_float = new_min_value;
+    max_float = new_max_value;
 
-        case FLOAT:
-            min_float = new_min_value;
-            max_float = new_max_value;
-            if (auto spin = dynamic_cast<QDoubleSpinBox*>(*i))
-            {
-                spin->setMinimum(min_float);
-                spin->setMaximum(max_float);
-            }
-        break;
+    for (auto i = widgets_.begin(); i!=widgets_.end(); ++i)
+    if (auto spin = dynamic_cast<QDoubleSpinBox*>(*i))
+    {
+        spin->setMinimum(min_float);
+        spin->setMaximum(max_float);
     }
 }
 
@@ -158,7 +134,7 @@ void Property::setMinMax(float new_min_value, float new_max_value)
 
 void Property::onValueChanged_()
 {
-    //SOM_DEBUG("Property::onValueChanged_()");
+    SOM_DEBUGN("Property::onValueChanged_()");
 
     if (cb_value_changed_) cb_value_changed_();
 }
@@ -340,6 +316,9 @@ QWidget * Property::getWidget_(QWidget * parent, QLayout * l0, size_t i)
         disconnectWidget();
     } );
 
+    // activity
+    widget->setEnabled(active_);
+
     return widget;
 }
 
@@ -386,6 +365,7 @@ void Property::updateWidget()
 
 void Property::setActive(bool active)
 {
+    active_ = active;
     for (auto i = widgets_.begin(); i!=widgets_.end(); ++i)
     {
         (*i)->setEnabled(active);

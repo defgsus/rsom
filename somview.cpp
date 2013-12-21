@@ -59,19 +59,19 @@ void SomView::paint_band_()
     QPainter p(this);
     p.setPen(Qt::NoPen);
 
-    int w = width()-2,
-        h = height()-2;
+    int w = width() - frameWidth()*2,
+        h = height() - frameWidth()*2;
     const
-    qreal sx = (qreal)w / som_->sizex + 1,
-          sy = (qreal)h / som_->sizey + 1;
+    qreal sx = (qreal)w / som_->sizex + frameWidth(),
+          sy = (qreal)h / som_->sizey + frameWidth();
 
     for (size_t y=0; y<som_->sizey; ++y)
     for (size_t x=0; x<som_->sizex; ++x)
     {
-        p.setBrush(QBrush(colors_.get(som_->data[y*som_->sizex+x][0])));
+        p.setBrush(QBrush(colors_.get(som_->data[y*som_->sizex+x][band_sel_])));
 
-        p.drawRect( (qreal)x / som_->sizex * w + 1,
-                    (qreal)y / som_->sizey * h + 1,
+        p.drawRect( (qreal)x / som_->sizex * w + frameWidth(),
+                    (qreal)y / som_->sizey * h + frameWidth(),
                     sx, sy );
 
     }
@@ -84,11 +84,11 @@ void SomView::paint_multi_band_()
     QPainter p(this);
     p.setPen(Qt::NoPen);
 
-    int w = width()-2,
-        h = height()-2;
+    int w = width() - frameWidth() * 2,
+        h = height() - frameWidth() * 2;
     const
-    qreal sx = (qreal)w / som_->sizex + 1,
-          sy = (qreal)h / som_->sizey + 1;
+    qreal sx = (qreal)w / som_->sizex + frameWidth(),
+          sy = (qreal)h / som_->sizey + frameWidth();
 
     for (size_t y=0; y<som_->sizey; ++y)
     for (size_t x=0; x<som_->sizex; ++x)
@@ -98,8 +98,8 @@ void SomView::paint_multi_band_()
             colors_.get_spectral(&som_->data[y*som_->sizex+x][0], som_->dim)
                    ));
 
-        p.drawRect( (qreal)x / som_->sizex * w + 1,
-                    (qreal)y / som_->sizey * h + 1,
+        p.drawRect( (qreal)x / som_->sizex * w + frameWidth(),
+                    (qreal)y / som_->sizey * h + frameWidth(),
                     sx, sy );
 
     }
@@ -112,19 +112,19 @@ void SomView::paint_umap_()
     QPainter p(this);
     p.setPen(Qt::NoPen);
 
-    int w = width()-2,
-        h = height()-2;
+    int w = width() - frameWidth() * 2,
+        h = height() - frameWidth() * 2;
     const
-    qreal sx = (qreal)w / som_->sizex + 1,
-          sy = (qreal)h / som_->sizey + 1;
+    qreal sx = (qreal)w / som_->sizex + frameWidth(),
+          sy = (qreal)h / som_->sizey + frameWidth();
 
     for (size_t y=0; y<som_->sizey; ++y)
     for (size_t x=0; x<som_->sizex; ++x)
     {
         p.setBrush(QBrush(colors_.get(som_->umap[y*som_->sizex+x])));
 
-        p.drawRect( (qreal)x / som_->sizex * w + 1,
-                    (qreal)y / som_->sizey * h + 1,
+        p.drawRect( (qreal)x / som_->sizex * w + frameWidth(),
+                    (qreal)y / som_->sizey * h + frameWidth(),
                     sx, sy );
 
     }

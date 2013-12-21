@@ -59,6 +59,7 @@ public:
     void name(const std::string& project_name);
 
     /** set spectrum parameters, restarts ALL.
+        On return of call, the Wave will be loaded, if possible.
         if band_amp_ == 0, bands will be normalized. */
     void set(size_t nr_bands, float min_freq, float max_freq, size_t grain_size, size_t window_width,
              float band_amp_ = 0.f, float band_exp_ = 1.f);
@@ -83,6 +84,9 @@ public:
 
     /** install callback for when bands are partially or fully calculated */
     void cb_bands(std::function<void()> func) { cb_bands_ = func; }
+
+    /** install callback for when bands are finished calculating */
+    void cb_bands_finished(std::function<void()> func) { cb_bands_finished_ = func; }
 
     /** install callback for when the SOM has been allocated */
     void cb_som_ready(std::function<void()> func) { cb_som_ready_ = func; }
@@ -136,6 +140,7 @@ private:
     std::function<void()>
         cb_wave_loaded_,
         cb_bands_,
+        cb_bands_finished_,
         cb_som_ready_,
         cb_som_;
 };

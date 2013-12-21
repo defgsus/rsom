@@ -59,6 +59,8 @@ protected:
         *wave_spec_colors_,
 
         *som_size_,
+        *som_size_use_f_,
+        *som_sizef_,
         *som_seed_,
         *som_alpha_,
         *som_radius_,

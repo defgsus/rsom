@@ -131,6 +131,9 @@ private:
 
     // callbacks
     std::function<void()> cb_value_changed_;
+
+    /** active state */
+    bool active_;
 };
 
 #endif // PROPERTY_H

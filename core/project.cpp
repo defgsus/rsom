@@ -21,8 +21,11 @@ Project::Project()
       restart_      (false),
       wave_changed_ (false),
 
-      cb_wave_loaded_(0),
-      cb_bands_      (0)
+      cb_wave_loaded_    (0),
+      cb_bands_          (0),
+      cb_bands_finished_ (0),
+      cb_som_ready_      (0),
+      cb_som_            (0)
 {
     SOM_DEBUG("Project::Project()");
 
@@ -35,7 +38,8 @@ Project::Project()
 Project::~Project()
 {
     SOM_DEBUG("Project::~Project()");
-    stop_worker();
+
+    if (thread_) stop_worker();
     if (wave_) delete wave_;
 }
 
@@ -67,15 +71,15 @@ void Project::set(size_t nr_bands, float min_freq, float max_freq, size_t grain_
     SOM_DEBUG("Project::set(" << nr_bands << ", " << min_freq << ", " << max_freq << ", " << grain_size << ", "
               << window_width << ", " << band_amp << ", " << band_exp << ")" );
 
-    stop_worker();
+    if (thread_) stop_worker();
 
     wave_->set(nr_bands, min_freq, max_freq, grain_size, window_width);
-    wave_changed_ = true;
     band_amp_ = band_amp;
     band_exp_ = band_exp;
+    wave_changed_ = true;
 
-    if (wave_->ok())
-        start_worker();
+    //if (wave_->ok())
+    //    start_worker();
 
 }
 
@@ -83,7 +87,7 @@ void Project::set_som(size_t sizex, size_t sizey, int rand_seed)
 {
     SOM_DEBUG("Project::set_som(" << sizex << ", " << sizey << ", " << rand_seed << ")" );
 
-    stop_worker();
+    if (thread_) stop_worker();
 
     som_sizex_ = sizex;
     som_sizey_ = sizey;
@@ -94,7 +98,6 @@ void Project::set_som(size_t sizex, size_t sizey, int rand_seed)
         start_worker();
     }
 }
-
 
 
 bool Project::load_wave(const std::string& soundfile_name)
@@ -227,6 +230,7 @@ void Project::work_loop_()
 
         // final update
         if (cb_bands_) cb_bands_();
+        if (cb_bands_finished_) cb_bands_finished_();
 
         // wave is prepared
         wave_changed_ = false;
