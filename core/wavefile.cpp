@@ -98,12 +98,43 @@ void Wave::set(size_t nr_bands, float min_freq, float max_freq, size_t grain_siz
     for (size_t i=0; i<nr_grains; ++i)
         band[i].resize(nr_bands);
 
+    // get sin/cos table
+    table_sin.resize(window_width * nr_bands);
+    table_cos.resize(window_width * nr_bands);
+    auto psin = table_sin.begin(),
+         pcos = table_cos.begin();
+    for (size_t b=0; b!=nr_bands; ++b)
+    {
+        // frequency of each band
+        float f = (float)b/std::max(1, (int)nr_bands-1);
+        f = TAU * 0.5f * (min_freq + f * (max_freq - min_freq));
+
+        // for each sample within the scanning window
+        for (size_t j=0; j<window_width; j++)
+        {
+            const float t = (float)j / info.samplerate;
+            *psin++ = sinf(t*f);
+            *pcos++ = cosf(t*f);
+        }
+    }
+
 }
 
 
 float Wave::get_bands(size_t xstart_, size_t xlen_, float amp)
 {
-    if (!nr_grains) return 0.000001;
+    float ma = 0.0001;
+
+    // safety checks
+
+    if (!nr_grains) return ma;
+
+    if (table_sin.size() != nr_bands * window_width
+     || table_cos.size() != nr_bands * window_width )
+    {
+        SOM_ERROR("Wave::get_bands:: sin/cos table not initialized");
+        return ma;
+    }
 
     // get window
     size_t xstart = 0, xend = nr_grains;
@@ -114,13 +145,14 @@ float Wave::get_bands(size_t xstart_, size_t xlen_, float amp)
     }
 
 
-    float ma = 0.0001;
-
     // --- the infamous triple-loop of a discrete fourier transform ---
 
     // for each grain
     for (size_t i=xstart; i<xend; ++i)
     {
+        auto psin = table_sin.cbegin(),
+             pcos = table_cos.cbegin();
+
         // for each band
         for (size_t b=0; b!=nr_bands; ++b)
         {
@@ -133,12 +165,12 @@ float Wave::get_bands(size_t xstart_, size_t xlen_, float amp)
             float sa=0.0, ca=0.0;
             for (size_t j=0; j<window_width; j++)
             {
-                const float t = (float)j / info.samplerate;
+                //const float t = (float)j / info.samplerate;
                 const int   si = i*grain_size + j;
                 const float sam = (si<info.frames)? wave[si] : 0.f;
 
-                sa += sinf(t*f) * sam;
-                ca += cosf(t*f) * sam;
+                sa += *psin++ * sam;
+                ca += *pcos++ * sam;
             }
 
             // the last bit raises the level of high bands

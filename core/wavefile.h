@@ -71,19 +71,27 @@ class Wave
 
     // _________ PUBLIC MEMBER __________
 
-    // settings
+    // -- settings --
+
     std::string filename;
     size_t nr_bands, grain_size, nr_grains, window_width;
     float min_freq, max_freq;
 
-    // wave data
-    std::vector<float> wave;
-    // band data
-    std::vector<std::vector<float>> band;
+    // -- data --
 
+    /** wave data */
+    std::vector<float> wave;
+    /** band data [nr_grains][nr_bands] */
+    std::vector<std::vector<float>> band;
+    /** precalculated sin/cos table (internal use). [nr_bands][window_width] */
+    std::vector<float> table_sin, table_cos;
+
+    /** the libsndfile, this will be invalid after loading. */
     SNDFILE *sfile;
-    // libsndfile info struct
+    /** libsndfile info struct */
     SF_INFO info;
+
+    // -- info --
 
     /** length in seconds */
     float length_in_secs;
