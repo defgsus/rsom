@@ -52,8 +52,11 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
     wave_band_exp_ = new Property("wave_band_exp", "band exp", "...");
     wave_band_exp_->init(0.0001f, 100.f, project_->band_exponent());
 
-    wave_spec_colors_ = new Property("wave_draw_spec_colors", "draw spec.\ncolors", "...");
-    wave_spec_colors_->init(false);
+    waved_waveform_ = new Property("waved_waveform", "draw waveform", "...");
+    waved_waveform_->init(true);
+
+    waved_spec_colors_ = new Property("waved_spec_colors", "draw spec.\ncolors", "...");
+    waved_spec_colors_->init(false);
 
     // --- som properties
 
@@ -61,11 +64,10 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
     som_size_->init(1, 2<<16, project_->som_sizex(), project_->som_sizey());
 
     som_size_use_f_ = new Property("som_size_use_f", "som size\nfrom grains", "...");
-    som_size_use_f_->init(false);
+    som_size_use_f_->init(true);
 
     som_sizef_ = new Property("som_sizef", "factor", "...");
     som_sizef_->init(0.001f, 10.f, 1.1f);
-    som_sizef_->setActive(false);
 
     som_seed_ = new Property("som_seed", "random seed", "...");
     som_seed_->init(-(2<<16), 2<<16, project_->som_seed());
@@ -79,19 +81,19 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
     som_sradius_ = new Property("som_search_radius", "local search radius", "...");
     som_sradius_->init(0.f, 2.f, project_->som_search_radius());
 
-    som_dmode_ = new Property("som_draw_mode", "draw mode", "...");
-    som_dmode_->init(
+    somd_dmode_ = new Property("somd_mode", "draw mode", "...");
+    somd_dmode_->init(
             { SDM_SINGLE_BAND, SDM_MULTI_BAND, SDM_UMAP, SDM_IMAP },
             { "single_band", "multi_band", "umap", "imap" },
             { "single band", "spectral color", "neighbour distance", "grain index" },
             SDM_SINGLE_BAND
                 );
 
-    som_band_nr_ = new Property("som_band_nr", "band index", "...");
-    som_band_nr_->init(0, 0, 0);
+    somd_band_nr_ = new Property("somd_band_nr", "band index", "...");
+    somd_band_nr_->init(0, 0, 0);
 
-    som_mult_ = new Property("som_paint_mult", "color scale", "...");
-    som_mult_->init(0.0001f, 1000.f, 1.f);
+    somd_mult_ = new Property("somd_color_scale", "color scale", "...");
+    somd_mult_->init(0.0001f, 1000.f, 1.f);
 
 
 
@@ -168,7 +170,8 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             {
                 // create analyzer widgets
                 const Property::LayoutType lt = Property::V_LABEL_WIDGET;
-                wave_spec_colors_-> createWidget(this, l2, lt);
+                waved_waveform_->    createWidget(this, l2, lt);
+                waved_spec_colors_-> createWidget(this, l2, lt);
             }
 
             l1->addSpacing(20);
@@ -197,20 +200,21 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
 
         // --- connect wave properties ---
 
-        wave_bands_->     cb_value_changed(std::bind(&ProjectView::set_wave_, this));
-        wave_freq_->      cb_value_changed(std::bind(&ProjectView::set_wave_, this));
-        wave_grain_size_->cb_value_changed(std::bind(&ProjectView::set_wave_, this));
-        wave_window_->    cb_value_changed(std::bind(&ProjectView::set_wave_, this));
-        wave_band_amp_->  cb_value_changed(std::bind(&ProjectView::set_wave_, this));
-        wave_band_exp_->  cb_value_changed(std::bind(&ProjectView::set_wave_, this));
-        wave_band_norm_-> cb_value_changed([=]()
+        waved_waveform_->   cb_value_changed( [=](){ waveview_->draw_waveform(waved_waveform_->v_bool[0]); });
+        waved_spec_colors_->cb_value_changed( [=](){ waveview_->draw_spec_colors(waved_spec_colors_->v_bool[0]); });
+
+        wave_bands_->       cb_value_changed(std::bind(&ProjectView::set_wave_, this));
+        wave_freq_->        cb_value_changed(std::bind(&ProjectView::set_wave_, this));
+        wave_grain_size_->  cb_value_changed(std::bind(&ProjectView::set_wave_, this));
+        wave_window_->      cb_value_changed(std::bind(&ProjectView::set_wave_, this));
+        wave_band_amp_->    cb_value_changed(std::bind(&ProjectView::set_wave_, this));
+        wave_band_exp_->    cb_value_changed(std::bind(&ProjectView::set_wave_, this));
+        wave_band_norm_->   cb_value_changed([=]()
         {
             // disable amp when normalized
             wave_band_amp_->setActive(!wave_band_norm_->v_bool[0]);
             set_wave_();
         });
-
-        wave_spec_colors_->cb_value_changed( [=](){ waveview_->draw_spec_colors(wave_spec_colors_->v_bool[0]); });
 
         // -- callbacks --
 
@@ -239,9 +243,9 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             l1->addLayout(l2);
             {
                 const Property::LayoutType lt = Property::H_WIDGET_LABEL;
-                som_dmode_->    createWidget(this, l2, lt);
-                som_band_nr_->  createWidget(this, l2, lt);
-                som_mult_->     createWidget(this, l2, lt);
+                somd_dmode_->    createWidget(this, l2, lt);
+                somd_band_nr_->  createWidget(this, l2, lt);
+                somd_mult_->     createWidget(this, l2, lt);
 
                 l2->addStretch(2);
             }
@@ -256,9 +260,9 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             l1->addLayout(l2);
             {
                 const Property::LayoutType lt = Property::H_WIDGET_LABEL;
-                som_size_->       createWidget(this, l2, lt);
                 som_size_use_f_-> createWidget(this, l2, lt);
                 som_sizef_->      createWidget(this, l2, lt);
+                som_size_->       createWidget(this, l2, lt);
                 l2->addSpacing(20);
                 som_seed_->       createWidget(this, l2, lt);
                 som_alpha_->      createWidget(this, l2, lt);
@@ -271,17 +275,18 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
 
         // -- connect Properties --
 
-        som_size_->       cb_value_changed(std::bind(&ProjectView::set_som_, this));
+        somd_dmode_->     cb_value_changed( [&]() { setSomPaintMode_(); });
+        somd_band_nr_->   cb_value_changed( [=]() { somview_->paintBandNr(somd_band_nr_->v_int[0]); });
+        somd_mult_->      cb_value_changed( [=]() { somview_->paintMultiplier(somd_mult_->v_float[0]); });
+
         som_size_use_f_-> cb_value_changed( [=]() { som_sizef_->setActive(som_size_use_f_->v_bool[0]); set_som_(); } );
         som_sizef_->      cb_value_changed( std::bind(&ProjectView::set_som_, this) );
-        som_seed_->       cb_value_changed(std::bind(&ProjectView::set_som_, this));
+        som_size_->       cb_value_changed( std::bind(&ProjectView::set_som_, this));
+        som_seed_->       cb_value_changed( std::bind(&ProjectView::set_som_, this));
         som_alpha_->      cb_value_changed( [=]() { project_->set_som_alpha(som_alpha_->v_float[0]); } );
         som_radius_->     cb_value_changed( [=]() { project_->set_som_radius(som_radius_->v_float[0]); } );
         som_sradius_->    cb_value_changed( [=]() { project_->set_som_search_radius(som_sradius_->v_float[0]); } );
 
-        som_dmode_->      cb_value_changed( [&]() { setSomPaintMode_(); });
-        som_band_nr_->    cb_value_changed( [=]() { somview_->paintBandNr(som_band_nr_->v_int[0]); });
-        som_mult_->       cb_value_changed( [=]() { somview_->paintMultiplier(som_mult_->v_float[0]); });
 
         // -- callbacks --
 
@@ -290,9 +295,10 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
         {
             somview_->setSom(&project_->som());
             // update band_nr_
-            if (som_dmode_->v_int[0] == SDM_SINGLE_BAND)
+            if (somd_dmode_->v_int[0] == SDM_SINGLE_BAND)
                 setSomPaintMode_();
         } );
+
         // when SOM is updated
         project_->cb_som(       [&]()
         {
@@ -303,11 +309,8 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
                 somview_->paintMultiplier(
                     som_mult_->v_float[0] / project_->wave().length_in_secs);
             }
-            else */if (need_umap_())
-            {
-                project_->som().calc_umap();
-                //somview_->paintMultiplier(som_mult_->v_float[0]);
-            }
+            */
+            if (need_umap_()) project_->som().calc_umap();
 
             somview_->update();
         } );
@@ -316,21 +319,21 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
 
 void ProjectView::setSomPaintMode_()
 {
-    const int pmode = som_dmode_->v_int[0];
+    const int pmode = somd_dmode_->v_int[0];
 
     SOM_DEBUG("ProjectView::setSomPaintMode_(" << pmode << ")");
 
     if (pmode == SDM_SINGLE_BAND)
     {
-        som_band_nr_->setMax((int)project_->som().dim - 1);
-        som_band_nr_->setActive(true);
+        somd_band_nr_->setMax((int)project_->som().dim - 1);
+        somd_band_nr_->setActive(true);
     }
     else
-        som_band_nr_->setActive(false);
+        somd_band_nr_->setActive(false);
 
     switch (pmode)
     {
-        case SDM_SINGLE_BAND:   somview_->paintBandNr(som_band_nr_->v_int[0]);
+        case SDM_SINGLE_BAND:   somview_->paintBandNr(somd_band_nr_->v_int[0]);
                                 somview_->paintMode(SomView::PM_Band); break;
         case SDM_MULTI_BAND:    somview_->paintMode(SomView::PM_MultiBand); break;
 
@@ -344,23 +347,29 @@ void ProjectView::setSomPaintMode_()
 bool ProjectView::need_umap_()
 {
     return
-        som_dmode_->v_int[0] >= SDM_UMAP;
+        somd_dmode_->v_int[0] >= SDM_UMAP;
 }
 
 bool ProjectView::need_imap_()
 {
     return
-        som_dmode_->v_int[0] == SDM_IMAP;
+        somd_dmode_->v_int[0] == SDM_IMAP;
 }
 
 bool ProjectView::loadWave(/*const std::string& fn*/)
 {
     QString fn =
+    #if (1)
+            // "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/rausch/radioscan_05_4.5.wav"
+            // "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/gong/metalfx01.wav"
+             "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/ldmvoice/danaykroyd.wav";
+    #else
         QFileDialog::getOpenFileName(this,
             "Open Sound",
             "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT",
             "Sound Files (*.wav *.riff *.voc);;All (*)"
             );
+    #endif
 
     if (fn.isNull()) return false;
 
@@ -370,10 +379,13 @@ bool ProjectView::loadWave(/*const std::string& fn*/)
 
     if (!project_->load_wave(
                 fn.toStdString()
-            // "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/rausch/radioscan_05_4.5.wav"
-            // "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/gong/metalfx01.wav"
-            // "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/ldmvoice/danaykroyd.wav"
             )) return false;
+
+    // update som parameters cause they
+    // (might) depend on the wave length
+    set_som_();
+
+    project_->start_worker();
 
     return true;
 }
@@ -397,7 +409,7 @@ void ProjectView::set_wave_()
             wave_band_exp_->v_float[0]
             );
 
-    set_som_();
+    //set_som_();
 }
 
 void ProjectView::set_som_()
@@ -407,11 +419,18 @@ void ProjectView::set_som_()
     // disconnect view
     somview_->setSom(0);
 
+    // determine size from nr_grains
     if (som_size_use_f_->v_bool[0])
     {
         // set size as a function of number of grains
         const size_t s = std::max(1.f, ceilf(
             sqrtf(project_->num_grains() * som_sizef_->v_float[0]) ));
+
+        // update size widgets
+        som_size_->v_int[0] = som_size_->v_int[1] = s;
+        som_size_->updateWidget();
+        /** @todo HACKY! The above causes retriggering of this function,
+                  but seems to be okay, though. */
 
         project_->set_som(
                 s,
@@ -419,13 +438,12 @@ void ProjectView::set_som_()
                 som_seed_->v_int[0]
             );
     }
+    // set sizex * sizey
     else
-        // sizex * sizey
         project_->set_som(
                 som_size_->v_int[0],
                 som_size_->v_int[1],
                 som_seed_->v_int[0]
             );
-
 }
 

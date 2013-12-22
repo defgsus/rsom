@@ -8,7 +8,7 @@
 
 Project::Project()
     :
-      filename_     ("new.rsom"),
+      filename_          ("new.rsom"),
 
       som_alpha_         (0.05),
       som_radius_        (0.07),
@@ -19,7 +19,7 @@ Project::Project()
       thread_            (0),
 
       run_               (false),
-      restart_           (false),
+      restart_som_       (false),
       wave_changed_      (false),
 
       cb_wave_loaded_    (0),
@@ -79,8 +79,8 @@ void Project::set(size_t nr_bands, float min_freq, float max_freq, size_t grain_
     band_exp_ = band_exp;
     wave_changed_ = true;
 
-    //if (wave_->ok())
-    //    start_worker();
+    if (wave_->ok())
+        start_worker();
 
 }
 
@@ -88,13 +88,15 @@ void Project::set_som(size_t sizex, size_t sizey, int rand_seed)
 {
     SOM_DEBUG("Project::set_som(" << sizex << ", " << sizey << ", " << rand_seed << ")" );
 
-    if (thread_) stop_worker();
+    //if (thread_) stop_worker();
 
     som_sizex_ = sizex;
     som_sizey_ = sizey;
     som_seed_ = rand_seed;
 
-    if (wave_ && wave_->ok())
+    restart_som_ = true;
+
+    if (!thread_ && wave_ && wave_->ok())
     {
         start_worker();
     }
@@ -165,6 +167,15 @@ void Project::stop_worker()
 }
 
 
+/** The whole worker thread.
+ *  Only one, currently.
+ *
+ *  The design is rather easy:
+ *      If the Wave is changed through Project::set() then the thread will be
+ *  restarted and wave_changed_ will be TRUE.
+ *      If the SOM init parameters are changed through set_som(),
+ *  restart_som_ will be TRUE and the worker thread jumps back to the som init code.
+*/
 void Project::work_loop_()
 {
     SOM_DEBUG("Project::work_loop_()");
@@ -181,6 +192,8 @@ void Project::work_loop_()
 
     if (wave_changed_)
     {
+        wave_changed_ = false;
+
         SOM_LOG("analyzing bands"
                 << "\nbands      " << wave_->nr_bands
                 << "\nmin freq   " << wave_->min_freq
@@ -201,7 +214,7 @@ void Project::work_loop_()
         // get each slice's band
         for (size_t x=0; x < num_grains(); ++x)
         {
-            if (!run_)
+            if (wave_changed_)
             {
                 SOM_DEBUG("break in spectral analyzis");
                 return;
@@ -233,11 +246,14 @@ void Project::work_loop_()
         if (cb_bands_) cb_bands_();
         if (cb_bands_finished_) cb_bands_finished_();
 
-        // wave is prepared
-        wave_changed_ = false;
+        // wave and band-data is prepared now
     }
 
     // ------- calculate som -------
+
+l_restart_som:
+
+    restart_som_ = false;
 
     SOM_DEBUG("Project::work_loop_:: som init");
 
@@ -254,6 +270,8 @@ void Project::work_loop_()
     timer.start();
     while (run_)
     {
+        if (restart_som_) goto l_restart_som;
+
         // set training parameters
         som_->alpha = som_alpha_;
         som_->radius = std::max(som_->sizex, som_->sizey) * som_radius_;

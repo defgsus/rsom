@@ -58,7 +58,9 @@ protected:
         *wave_band_norm_,
         *wave_band_amp_,
         *wave_band_exp_,
-        *wave_spec_colors_,
+
+        *waved_waveform_,
+        *waved_spec_colors_,
 
         *som_size_,
         *som_size_use_f_,
@@ -68,9 +70,9 @@ protected:
         *som_radius_,
         *som_sradius_,
 
-        *som_dmode_,
-        *som_band_nr_,
-        *som_mult_;
+        *somd_dmode_,
+        *somd_band_nr_,
+        *somd_mult_;
 };
 
 #endif // PROJECTVIEW_H

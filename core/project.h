@@ -111,6 +111,7 @@ public:
     // _____ PRIV _______
 private:
 
+    // see comment in .cpp file
     void work_loop_();
 
     // -- properties --
@@ -132,12 +133,15 @@ private:
     // -- runtime --
 
     std::thread * thread_;
-    std::mutex mutex_;
+    //std::mutex mutex_;
 
     volatile bool
+    /** flag for stopping the worker thread */
         run_,
-        restart_,
-    /** a restart causes the wave to be re-analyzed */
+    /** flag for restarting the som (re-allocating) */
+        restart_som_,
+    /** flag that the wave needs to be re-analyzed
+        (only happening after restart of worker thread) */
         wave_changed_;
 
     std::function<void()>
