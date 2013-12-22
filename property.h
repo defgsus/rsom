@@ -107,8 +107,9 @@ public:
         This happens automatically on destruction of the widget. */
     void disconnectWidget();
 
-    /** Sets the associated widget to the current Property value. */
-    void updateWidget();
+    /** Sets the associated widget(s) to the current Property value.
+        Causes a cb_value_changed if 'do_callback' == true. */
+    void updateWidget(bool do_callback = true);
 
     /** activate or deactivate the associated widget */
     void setActive(bool active);
@@ -126,14 +127,16 @@ private:
     /** create a label */
     QWidget * getLabel_(QWidget * parent, QLayout * layout);
 
-    /** a widget for each value (dim) */
+    /** a widget for each value [0,dim-1] */
     std::vector<QWidget*> widgets_;
 
     // callbacks
     std::function<void()> cb_value_changed_;
 
     /** active state */
-    bool active_;
+    bool active_,
+    /** ignore a cb_value_changed once. used for updateWidget(false) */
+        ignore_value_changed_once_;
 };
 
 #endif // PROPERTY_H

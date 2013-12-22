@@ -6,6 +6,15 @@
 
 #include <QElapsedTimer>
 
+
+#define SOM_CALLBACK(cb_name__) \
+{ \
+    SOM_DEBUGN(0, "Project:: callback " #cb_name__ ); \
+    if (cb_name__##_) cb_name__##_(); \
+}
+
+
+
 Project::Project()
     :
       filename_          ("new.rsom"),
@@ -16,11 +25,12 @@ Project::Project()
 
       wave_              (new Wave),
       som_               (new Som),
-      thread_            (0),
+      wave_thread_       (0),
+      som_thread_        (0),
 
-      run_               (false),
-      restart_som_       (false),
-      wave_changed_      (false),
+      run_wave_          (false),
+      run_som_           (false),
+      som_ready_         (false),
 
       cb_wave_loaded_    (0),
       cb_bands_          (0),
@@ -40,7 +50,9 @@ Project::~Project()
 {
     SOM_DEBUG("Project::~Project()");
 
-    if (thread_) stop_worker();
+    if (wave_thread_) stopWaveThread();
+    if (som_thread_) stopSomThread();
+
     if (wave_) delete wave_;
 }
 
@@ -72,15 +84,14 @@ void Project::set(size_t nr_bands, float min_freq, float max_freq, size_t grain_
     SOM_DEBUG("Project::set(" << nr_bands << ", " << min_freq << ", " << max_freq << ", " << grain_size << ", "
               << window_width << ", " << band_amp << ", " << band_exp << ")" );
 
-    if (thread_) stop_worker();
+    if (wave_thread_) stopWaveThread();
+    if (som_thread_) stopSomThread();
 
     wave_->set(nr_bands, min_freq, max_freq, grain_size, window_width);
     band_amp_ = band_amp;
     band_exp_ = band_exp;
-    wave_changed_ = true;
 
-    if (wave_->ok())
-        start_worker();
+    if (wave_->ok()) startWaveThread();
 
 }
 
@@ -88,17 +99,17 @@ void Project::set_som(size_t sizex, size_t sizey, int rand_seed)
 {
     SOM_DEBUG("Project::set_som(" << sizex << ", " << sizey << ", " << rand_seed << ")" );
 
-    //if (thread_) stop_worker();
+    if (som_thread_) stopSomThread();
+
+    som_ready_ = false;
 
     som_sizex_ = sizex;
     som_sizey_ = sizey;
     som_seed_ = rand_seed;
 
-    restart_som_ = true;
-
-    if (!thread_ && wave_ && wave_->ok())
+    if (wave_ && wave_->ok())
     {
-        start_worker();
+        startSomThread();
     }
 }
 
@@ -107,8 +118,12 @@ bool Project::load_wave(const std::string& soundfile_name)
 {
     SOM_DEBUG("Project::load_wave(" << soundfile_name << ")");
 
-    stop_worker();
-    //std::lock_guard<std::mutex> lock(mutex_);
+    // stop wave thread first
+    if (wave_thread_) stopWaveThread();
+    // also stop som thread, som will probably reallocate
+    if (som_thread_) stopSomThread();
+
+    som_ready_ = false;
 
     if (!wave_->open(soundfile_name))
     {
@@ -119,90 +134,38 @@ bool Project::load_wave(const std::string& soundfile_name)
 
     SOM_DEBUG("Project::load_wave::wave_->update()");
 
+    // resize wave band data
     wave_->update();
-    wave_changed_ = true;
 
     // callback
-    if (cb_wave_loaded_) cb_wave_loaded_();
+    SOM_CALLBACK(cb_wave_loaded);
 
-    start_worker();
-    return true;
-}
-
-bool Project::start_worker()
-{
-    SOM_DEBUG("Project::start_worker()");
-
-    if (thread_ || run_)
-    {
-        SOM_DEBUG("Project::start_worker:: already running");
-        return true;
-    }
-
-    thread_ = new std::thread( std::bind(&Project::work_loop_, this));
+    startWaveThread();
 
     return true;
 }
 
-void Project::stop_worker()
+
+
+void Project::startWaveThread()
 {
-    SOM_DEBUG("Project::stop_worker()");
+    SOM_DEBUG("startWaveThread()");
 
-    if (!thread_)
+    SOM_LOG("analyzing bands"
+            << "\nbands      " << wave_->nr_bands
+            << "\nmin freq   " << wave_->min_freq
+            << "\nmax freq   " << wave_->max_freq
+            << "\namp        " << band_amp_ << " ^ " << band_exp_
+            << "\ngrains     " << wave_->nr_grains
+            << "\ngrain size " << wave_->grain_size
+            << "\nwindow     " << wave_->window_width
+            );
+
+
+    /// @todo refacture this
+    auto func = [&]()
     {
-        SOM_DEBUG("Project::stop_worker:: no thread_");
-        return;
-    }
-
-    if (run_)
-    {
-        run_ = false;
-        SOM_DEBUG("Project::stop_worker:: joining thread_");
-        thread_->join();
-    }
-
-    delete thread_;
-    thread_ = 0;
-    SOM_DEBUG("Project::stop_worker:: thread_ killed");
-}
-
-
-/** The whole worker thread.
- *  Only one, currently.
- *
- *  The design is rather easy:
- *      If the Wave is changed through Project::set() then the thread will be
- *  restarted and wave_changed_ will be TRUE.
- *      If the SOM init parameters are changed through set_som(),
- *  restart_som_ will be TRUE and the worker thread jumps back to the som init code.
-*/
-void Project::work_loop_()
-{
-    SOM_DEBUG("Project::work_loop_()");
-
-    if (!wave_)
-    {
-        SOM_ERROR("Project::work_loop_:: no wave_");
-        return;
-    }
-
-    run_ = true;
-
-    // ------- analyze wave ---------
-
-    if (wave_changed_)
-    {
-        wave_changed_ = false;
-
-        SOM_LOG("analyzing bands"
-                << "\nbands      " << wave_->nr_bands
-                << "\nmin freq   " << wave_->min_freq
-                << "\nmax freq   " << wave_->max_freq
-                << "\namp        " << band_amp_ << " ^ " << band_exp_
-                << "\ngrains     " << wave_->nr_grains
-                << "\ngrain size " << wave_->grain_size
-                << "\nwindow     " << wave_->window_width
-                );
+        run_wave_ = true;
 
         // normalize or scale?
         const float amp = band_amp_>0 ? band_amp_ : 1;
@@ -214,7 +177,7 @@ void Project::work_loop_()
         // get each slice's band
         for (size_t x=0; x < num_grains(); ++x)
         {
-            if (wave_changed_)
+            if (!run_wave_)
             {
                 SOM_DEBUG("break in spectral analyzis");
                 return;
@@ -229,7 +192,7 @@ void Project::work_loop_()
             // callback
             if (timer.elapsed() > 200)
             {
-                if (cb_bands_) cb_bands_();
+                SOM_CALLBACK(cb_bands);
                 timer.start();
             }
 
@@ -243,17 +206,106 @@ void Project::work_loop_()
             wave_->shape(1.f, band_exp_);
 
         // final update
-        if (cb_bands_) cb_bands_();
-        if (cb_bands_finished_) cb_bands_finished_();
+        SOM_CALLBACK(cb_bands);
+        SOM_CALLBACK(cb_bands_finished);
 
         // wave and band-data is prepared now
+    };
+
+    // stop previous thread
+    if (wave_thread_) stopWaveThread();
+
+    // run thread
+    wave_thread_ = new std::thread( func );
+}
+
+void Project::stopWaveThread()
+{
+    SOM_DEBUG("Project::stopWaveThread()");
+
+    if (!wave_thread_)
+    {
+        SOM_DEBUG("Project::stopWaveThread:: no thread");
+        return;
     }
 
+    if (run_wave_)
+    {
+        run_wave_ = false;
+        SOM_DEBUG("Project::stopWaveThread:: joining thread");
+        wave_thread_->join();
+    }
+
+    delete wave_thread_;
+    wave_thread_ = 0;
+
+    SOM_DEBUG("Project::stopWaveThread:: thread killed");
+}
+
+
+
+
+
+bool Project::startSomThread()
+{
+    SOM_DEBUG("Project::startSomThread()");
+
+    if (som_thread_ || run_som_)
+    {
+        SOM_DEBUG("Project::startSomThread:: already running");
+        return true;
+    }
+
+    som_thread_ = new std::thread( std::bind(&Project::work_loop_, this));
+
+    return true;
+}
+
+void Project::stopSomThread()
+{
+    SOM_DEBUG("Project::stopSomThread()");
+
+    if (!som_thread_)
+    {
+        SOM_DEBUG("Project::stopSomThread:: no thread");
+        return;
+    }
+
+    if (run_som_)
+    {
+        run_som_ = false;
+        SOM_DEBUG("Project::stopSomThread:: joining thread");
+        som_thread_->join();
+    }
+
+    delete som_thread_;
+    som_thread_ = 0;
+    SOM_DEBUG("Project::stopSomThread:: thread killed");
+}
+
+
+
+
+
+/** The whole worker thread.
+ *  Only one, currently.
+ *
+ *      If the SOM init parameters are changed through set_som(),
+ *  restart_som_ will be TRUE and the worker thread jumps back to the som init code.
+*/
+void Project::work_loop_()
+{
+    SOM_DEBUG("Project::work_loop_()");
+
+    if (!wave_)
+    {
+        SOM_ERROR("Project::work_loop_:: no wave_");
+        return;
+    }
+
+    run_som_ = true;
+
     // ------- calculate som -------
-
-l_restart_som:
-
-    restart_som_ = false;
 
     SOM_DEBUG("Project::work_loop_:: som init");
 
@@ -261,17 +313,17 @@ l_restart_som:
     som_->insertWave(*wave_);
     som_->initMap();
 
-    // callback
-    if (cb_som_ready_) cb_som_ready_();
+    som_ready_ = true;
 
-    SOM_DEBUG("Project::work_loop_:: starting loop");
+    // callback
+    SOM_CALLBACK(cb_som_ready);
+
+    SOM_DEBUG("Project::work_loop_:: starting training loop");
 
     QElapsedTimer timer;
     timer.start();
-    while (run_)
+    while (run_som_)
     {
-        if (restart_som_) goto l_restart_som;
-
         // set training parameters
         som_->alpha = som_alpha_;
         som_->radius = std::max(som_->sizex, som_->sizey) * som_radius_;
@@ -283,12 +335,11 @@ l_restart_som:
         // callback after period
         if (timer.elapsed() > 200)
         {
-            if (cb_som_) cb_som_();
+            SOM_CALLBACK(cb_som);
             timer.start();
         }
 
         //usleep(1000*1);
     }
 
-    run_ = false;
 }

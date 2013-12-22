@@ -10,13 +10,20 @@
 #include <QLayout>
 #include <QSizePolicy>
 
+#define SOM_CALLBACK(cb_name__) \
+{ \
+    SOM_DEBUGN(0, "Project:: callback " #cb_name__ ); \
+    if (cb_name__##_) cb_name__##_(); \
+}
+
 Property::Property(const QString& id, const QString& name, const QString& help)
     :   type    (UNKNOWN),
         id      (id),
         name    (name),
         help    (help),
         dim     (0),
-        active_ (true)
+        active_ (true),
+        ignore_value_changed_once_(false)
 {
     SOM_DEBUGN(0, "Property::Property(" << id.toStdString() << ", " << name.toStdString() << ")");
 }
@@ -136,7 +143,15 @@ void Property::onValueChanged_()
 {
     SOM_DEBUGN(0, "Property::onValueChanged_()");
 
-    if (cb_value_changed_) cb_value_changed_();
+    if (ignore_value_changed_once_)
+    {
+        ignore_value_changed_once_ = false;
+        SOM_DEBUGN(0, "Property::onValueChanged_:: not sending");
+
+        return;
+    }
+
+    SOM_CALLBACK(cb_value_changed);
 }
 
 void Property::createWidget(QWidget * parent, QLayout * l0, LayoutType ltype)
@@ -324,16 +339,24 @@ QWidget * Property::getWidget_(QWidget * parent, QLayout * l0, size_t i)
 
 void Property::disconnectWidget()
 {
+    SOM_DEBUGN(0, "Property::disconnectWidget()");
+
     widgets_.clear();
     cb_value_changed_ = 0;
 }
 
-void Property::updateWidget()
+void Property::updateWidget(bool do_callback)
 {
+    SOM_DEBUGN(0, "Property::updateWidget(" << do_callback << ")");
+
     if (widgets_.empty()) return;
 
     for (size_t i=0; i<dim; ++i)
     {
+        // prepare to not send the cb_value_changed_
+        if (!do_callback)
+            ignore_value_changed_once_ = true;
+
         switch (type)
         {
             case BOOL:

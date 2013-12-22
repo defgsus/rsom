@@ -12,14 +12,20 @@
 
 #include <string>
 #include <thread>
+#include <future>
 
 #include "wavefile.h"
 #include "som.h"
 
 
 /** Settings and task manager.
-    Each Project contains all settings and data
-    and runs the analyzis in a separate task. */
+    A Project contains all settings and data
+    and runs the analysis and training in separate threads.
+
+    To work with this class, you need to respond to some callbacks.
+    cb_bands_finished() is the callback from where you can start
+    training with set_som().
+*/
 class Project
 {
 public:
@@ -52,6 +58,8 @@ public:
     float              som_radius()     const { return som_radius_; }
     float              som_search_radius()
                                         const { return som_search_radius_; }
+    /** only true when the som is allocated. */
+    bool               som_ready()      const { return som_ready_; }
 
     // --- access ---------
 
@@ -60,9 +68,10 @@ public:
     /** set name of project */
     void name(const std::string& project_name);
 
-    /** set spectrum parameters, restarts ALL.
-        On return of call, the Wave will be loaded, if possible.
-        if band_amp_ == 0, bands will be normalized. */
+    /** set spectrum parameters, restarts wave analysis.
+        On return of call, the band data will be reallocated.
+        if band_amp_ == 0, bands will be normalized.
+        <p></p> */
     void set(size_t nr_bands, float min_freq, float max_freq, size_t grain_size, size_t window_width,
              float band_amp_ = 0.f, float band_exp_ = 1.f);
 
@@ -75,9 +84,10 @@ public:
 
     // ------- IO ---------
 
-    /** Try to load a sample. Discards all current calculations.
-        After succesful return of this function, the data is initialized,
-        but it will be calculated by the worker thread. */
+    /** Tries to load a sample.
+        Discards all current calculations and restarts Wave thread.
+        After succesful return of this function, the data is initialized
+        and will be calculated by the worker thread. */
     bool load_wave(const std::string& soundfile_name);
 
     // ----- callbacks ----
@@ -85,27 +95,33 @@ public:
     /** install callback for when wavefile is loaded */
     void cb_wave_loaded(std::function<void()> func) { cb_wave_loaded_ = func; }
 
-    /** install callback for when bands are partially or fully calculated */
+    /** install callback for when bands are partially or fully calculated.
+        The last call of cb_bands will happen after all bands are calculated. */
     void cb_bands(std::function<void()> func) { cb_bands_ = func; }
 
     /** install callback for when bands are finished calculating */
     void cb_bands_finished(std::function<void()> func) { cb_bands_finished_ = func; }
 
-    /** install callback for when the SOM has been allocated */
+    /** install callback for when the SOM has been (re-)allocated */
     void cb_som_ready(std::function<void()> func) { cb_som_ready_ = func; }
 
-    /** install callback for when the SOM has made progress */
+    /** install callback for when the SOM has made progress. */
     void cb_som(std::function<void()> func) { cb_som_ = func; }
 
-    // --------------
+    // ------ threading --------
 
-    // these are not really needed right now but handled internally
+    // these are not really part of the interface but handled internally
+
+    /** throw threads at band data, calls cb_bands and cb_bands_finished */
+    void startWaveThread();
+    /** stop wave analysis thread(s), if running */
+    void stopWaveThread();
 
     /** start the thread, if not already running. return if running. */
-    bool start_worker();
+    bool startSomThread();
 
     /** stop worker thread, if running */
-    void stop_worker();
+    void stopSomThread();
 
 
     // _____ PRIV _______
@@ -132,17 +148,18 @@ private:
 
     // -- runtime --
 
-    std::thread * thread_;
+    std::thread
+        * wave_thread_,
+        * som_thread_;
     //std::mutex mutex_;
 
     volatile bool
-    /** flag for stopping the worker thread */
-        run_,
-    /** flag for restarting the som (re-allocating) */
-        restart_som_,
-    /** flag that the wave needs to be re-analyzed
-        (only happening after restart of worker thread) */
-        wave_changed_;
+    /** flag for stopping the analysis thread */
+        run_wave_,
+    /** flag for stopping the som worker thread */
+        run_som_,
+
+        som_ready_;
 
     std::function<void()>
         cb_wave_loaded_,

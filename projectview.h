@@ -28,8 +28,10 @@ public:
     bool loadWave();
 
 signals:
+    void start_som_signal();
 
 public slots:
+    void start_som() { set_som_(); }
 
 protected:
     /** (re-)set the wave parameters using Properties */

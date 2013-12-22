@@ -2,21 +2,23 @@
 #define LOG_H
 
 #include <iostream>
+#include <thread>
 
 #define SOM_DEBUG(stream_arg__) \
-    { std::cerr << stream_arg__ << "\n"; }
+    { std::cerr << std::hex << std::this_thread::get_id() << ": " \
+                << stream_arg__ << "\n"; }
 
 
 
 /** SOM_DEBUGN(level, arg) - noisy debug with level */
-#if (0)
+#if (1)
 #   define SOM_DEBUGN(level__, stream_arg__) \
         if (level__<=SOM_DEBUGN_LEVEL) SOM_DEBUG(stream_arg__)
 #else
 #   define SOM_DEBUGN(level__, stream_arg__) { }
 #endif
 
-#define SOM_DEBUGN_LEVEL 3
+#define SOM_DEBUGN_LEVEL 2
 
 
 #define SOM_ERROR(stream_arg__) \
