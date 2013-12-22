@@ -104,6 +104,12 @@ class Som
         according to current strategy. */
     size_t best_match(Data * data);
 
+    /** Returns the index of the best matching cell for the Data,
+        according to current strategy. Avoids cells that already
+        contain a data index (in imap).
+        The function returns -1, if no entry could be found. */
+    size_t best_match_avoid(Data * data);
+
     /** Returns the distance/difference between 'data' and the map cell */
     float get_distance(const Data * data, size_t cell_index) const;
 
@@ -112,8 +118,10 @@ class Som
 
     // ---------- info maps -------------------
 
-    /** Sets umap to 'value' */
+    /** Sets whole umap to 'value' */
     void set_umap(float value = 0.0);
+    /** Sets whole imap to 'value' */
+    void set_imap(int value = 0.0);
 
     /** Calculates the distance to neighbours for each cell */
     void calc_umap();
@@ -128,10 +136,10 @@ class Som
     size_t best_match(const float* dat);
 
     /** Finds best matching entry for data.
-        Avoids fields who's 'umap' value is equal to or above 'thresh'.
+        Avoids fields who's 'imap' value is equal to or above zero.
         'dat' must point to 'dim' floats.
         This function is used to assign each cell a particular grain. */
-    size_t best_match_avoid(const float* dat, float thresh = 0.0);
+    size_t best_match_avoid(const float* dat);
 
     // _______ PUBLIC MEMBER _________
 
@@ -163,6 +171,8 @@ class Som
 
     bool
         do_wrap,
+    /** no data sample can be on top of a previous other match */
+        do_non_duplicate,
         /// @todo not fully clear
         do_index_all;
 

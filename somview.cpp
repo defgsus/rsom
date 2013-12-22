@@ -7,11 +7,11 @@
 
 
 SomView::SomView(QWidget * parent)
-    :   QFrame  (parent),
-        som_    (0),
-        pmode_  (PM_Band),
-        band_sel_(0),
-        paint_mult_(1.f)
+    :   QFrame      (parent),
+        som_        (0),
+        pmode_      (PM_Band),
+        band_sel_   (0),
+        paint_mult_ (1.f)
 {
     SOM_DEBUG("SomView::SomView()");
 

@@ -90,6 +90,12 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
     som_sradius_ = new Property("som_search_radius", "local search radius", "...");
     som_sradius_->init(0.f, 2.f, project_->som_search_radius());
 
+    som_non_dupl_ = new Property("som_no_duplicates", "ignore vacant cells", "...");
+    som_non_dupl_->init(false);
+
+    som_wrap_ = new Property("som_wrap_edge", "wrap on edges", "...");
+    som_wrap_->init(true);
+
     somd_dmode_ = new Property("somd_mode", "draw mode", "...");
     somd_dmode_->init(
             { SDM_SINGLE_BAND, SDM_MULTI_BAND, SDM_UMAP, SDM_IMAP },
@@ -264,6 +270,8 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
                 som_alpha_->      createWidget(this, l2, lt);
                 som_radius_->     createWidget(this, l2, lt);
                 som_sradius_->    createWidget(this, l2, lt);
+                som_non_dupl_->   createWidget(this, l2, lt);
+                som_wrap_->       createWidget(this, l2, lt);
 
                 l2->addStretch(2);
             }
@@ -271,7 +279,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
 
         // -- connect Properties --
 
-        somd_dmode_->     cb_value_changed( [&]() { setSomPaintMode_(); });
+        somd_dmode_->     cb_value_changed( [&]() { checkWidgets_(); setSomPaintMode_(); });
         somd_band_nr_->   cb_value_changed( [&]() { somview_->paintBandNr(somd_band_nr_->v_int[0]); });
         somd_mult_->      cb_value_changed( [&]() { somview_->paintMultiplier(somd_mult_->v_float[0]); });
         somd_calc_imap_-> cb_value_changed( [&]() { checkWidgets_(); });
@@ -285,6 +293,9 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
         som_alpha_->      cb_value_changed( [&]() { project_->set_som_alpha(som_alpha_->v_float[0]); } );
         som_radius_->     cb_value_changed( [&]() { project_->set_som_radius(som_radius_->v_float[0]); } );
         som_sradius_->    cb_value_changed( [&]() { project_->set_som_search_radius(som_sradius_->v_float[0]); } );
+
+        som_non_dupl_->   cb_value_changed( [&]() { project_->som().do_non_duplicate = som_non_dupl_->v_bool[0]; } );
+        som_wrap_->       cb_value_changed( [&]() { project_->som().do_wrap = som_wrap_->v_bool[0]; } );
 
 
 
@@ -323,6 +334,10 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
         // when SOM is updated
         project_->cb_som(       [&]()
         {
+            /** @note The umap/imap calculation must
+                not happen asynchronously to the som training.
+                This callback however comes from the som thread! */
+            calc_maps_();
             som_update_signal();
         } );
 
@@ -467,15 +482,12 @@ void ProjectView::setSomPaintMode_()
 
 }
 
-void ProjectView::som_update()
+void ProjectView::calc_maps_()
 {
-    //label->setText(QString::fromStdString(project_->som().info_str()));
+    // assume Som::map[] is just ready
 
-    /** @note The umap/imap calculation as well as the
-        displaying by SomView happens asynchronously to
-        the som training. */
+    // calc other info maps as needed
 
-    // calc other info maps if needed
     if (somd_dmode_->v_int[0] == SDM_IMAP)
     {
         if (somd_calc_imap_->v_bool[0])
@@ -484,18 +496,12 @@ void ProjectView::som_update()
 
     if (somd_dmode_->v_int[0] == SDM_UMAP)
         project_->som().calc_umap();
+}
+
+void ProjectView::som_update()
+{
+    //label->setText(QString::fromStdString(project_->som().info_str()));
 
     somview_->update();
 }
 
-bool ProjectView::need_umap_()
-{
-    return
-        somd_dmode_->v_int[0] >= SDM_UMAP;
-}
-
-bool ProjectView::need_imap_()
-{
-    return
-        somd_dmode_->v_int[0] == SDM_IMAP;
-}

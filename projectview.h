@@ -44,13 +44,11 @@ protected:
     /** (re-)set the wave parameters using Properties */
     void set_som_();
 
+    /** update the needed maps immidiately */
+    void calc_maps_();
+
     /** update SomView */
     void setSomPaintMode_();
-
-    /** determine if umap must be calculated */
-    bool need_umap_();
-    /** determine if imap must be calculated */
-    bool need_imap_();
 
     Project * project_;
     WaveView * waveview_;
@@ -77,6 +75,8 @@ protected:
         *som_alpha_,
         *som_radius_,
         *som_sradius_,
+        *som_non_dupl_,
+        *som_wrap_,
 
         *somd_dmode_,
         *somd_band_nr_,
