@@ -3,6 +3,7 @@
 #include "log.h"
 
 #include <functional>
+#include <future>
 
 #include <QElapsedTimer>
 
@@ -151,36 +152,27 @@ void Project::startWaveThread()
 {
     SOM_DEBUG("startWaveThread()");
 
-    SOM_LOG("analyzing bands"
-            << "\nbands      " << wave_->nr_bands
-            << "\nmin freq   " << wave_->min_freq
-            << "\nmax freq   " << wave_->max_freq
-            << "\namp        " << band_amp_ << " ^ " << band_exp_
-            << "\ngrains     " << wave_->nr_grains
-            << "\ngrain size " << wave_->grain_size
-            << "\nwindow     " << wave_->window_width
-            );
-
-
-    /// @todo refacture this
-    auto func = [&]()
+    // one piece of work
+    auto spec_loop = [this](size_t xstart, size_t xend)
     {
-        run_wave_ = true;
+        SOM_DEBUG("Project::startWaveThread::spec_loop(" << xstart << ", " << xend << ", " << run_wave_ << ")");
+
+        // timer for update callbacks
+        QElapsedTimer timer;
+        timer.start();
 
         // normalize or scale?
         const float amp = band_amp_>0 ? band_amp_ : 1;
 
-        QElapsedTimer timer;
-        timer.start();
         float max_value = 0.000001;
 
         // get each slice's band
-        for (size_t x=0; x < num_grains(); ++x)
+        for (size_t x=xstart; x < xend; ++x)
         {
             if (!run_wave_)
             {
-                SOM_DEBUG("break in spectral analyzis");
-                return;
+                SOM_DEBUG("break in spectral analysis");
+                return 0.f;
             }
 
             // get band data and max-value
@@ -189,13 +181,63 @@ void Project::startWaveThread()
                     wave_->get_bands(x, 1, amp)
                 );
 
-            // callback
-            if (timer.elapsed() > 200)
+            // callback (from first thread)
+            if (xstart == 0 && timer.elapsed() > 200)
             {
                 SOM_CALLBACK(cb_bands);
                 timer.start();
             }
 
+        }
+
+        return max_value;
+    };
+
+
+    // main wave/band calc thread
+
+    auto wave_thread = [this, spec_loop]()
+    {
+        SOM_LOG("analyzing bands"
+                << "\nbands      " << wave_->nr_bands
+                << "\nmin freq   " << wave_->min_freq
+                << "\nmax freq   " << wave_->max_freq
+                << "\namp        " << band_amp_ << " ^ " << band_exp_
+                << "\ngrains     " << wave_->nr_grains
+                << "\ngrain size " << wave_->grain_size
+                << "\nwindow     " << wave_->window_width
+                );
+
+        run_wave_ = true;
+
+        /// @todo support less then num_cpu grains!!
+
+        // sub-threads
+        std::vector<std::future<float>> tasks;
+
+        const size_t num_threads = 8;
+
+        // create num_cpu slices of work
+        const size_t xstep = num_grains() / num_threads + 1;
+        size_t xstart = 0, xend = xstep;
+        for (size_t i = 0; i < num_threads; ++i)
+        {
+            tasks.push_back( std::async(
+                std::launch::async,
+                spec_loop, xstart, xend
+            ));
+            xstart += xstep;
+            xend = std::min(num_grains(), xend + xstep);
+        }
+
+        SOM_DEBUGN(0, "waiting for wave tasks");
+
+        // wait for results
+        float max_value = 0.000001;
+        for (size_t i = 0; i<tasks.size(); ++i)
+        {
+            tasks[i].wait();
+            max_value = std::max( max_value, tasks[i].get() );
         }
 
         // normalize or re-scale
@@ -212,11 +254,13 @@ void Project::startWaveThread()
         // wave and band-data is prepared now
     };
 
+    // ----- EXECUTE ------
+
     // stop previous thread
     if (wave_thread_) stopWaveThread();
 
     // run thread
-    wave_thread_ = new std::thread( func );
+    wave_thread_ = new std::thread( wave_thread );
 }
 
 void Project::stopWaveThread()
