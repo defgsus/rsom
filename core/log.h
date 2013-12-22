@@ -11,7 +11,7 @@
 
 
 /** SOM_DEBUGN(level, arg) - noisy debug with level */
-#if (1)
+#if (0)
 #   define SOM_DEBUGN(level__, stream_arg__) \
         if (level__<=SOM_DEBUGN_LEVEL) SOM_DEBUG(stream_arg__)
 #else

@@ -29,11 +29,16 @@ public:
 
 signals:
     void start_som_signal();
+    void som_update_signal();
 
 public slots:
     void start_som() { set_som_(); }
+    void som_update();
 
 protected:
+    /** check sanity of Property widgets. */
+    void checkWidgets_();
+
     /** (re-)set the wave parameters using Properties */
     void set_wave_();
     /** (re-)set the wave parameters using Properties */
@@ -67,6 +72,7 @@ protected:
         *som_size_,
         *som_size_use_f_,
         *som_sizef_,
+        *som_size_to_g_,
         *som_seed_,
         *som_alpha_,
         *som_radius_,
@@ -74,7 +80,8 @@ protected:
 
         *somd_dmode_,
         *somd_band_nr_,
-        *somd_mult_;
+        *somd_mult_,
+        *somd_calc_imap_;
 };
 
 #endif // PROJECTVIEW_H
