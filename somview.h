@@ -27,7 +27,9 @@ public:
         /** draw something like the spectral color */
         PM_MultiBand,
         /** draw the umap (whatever is in there) */
-        PM_UMap
+        PM_UMap,
+        /** draw the index map */
+        PM_IMap
     };
 
 
@@ -56,6 +58,7 @@ protected:
     void paint_band_();
     void paint_multi_band_();
     void paint_umap_();
+    void paint_imap_();
 
     const Som * som_;
 

@@ -10,16 +10,17 @@ Project::Project()
     :
       filename_     ("new.rsom"),
 
-      som_alpha_    (0.1),
-      som_radius_   (0.1),
+      som_alpha_         (0.05),
+      som_radius_        (0.07),
+      som_search_radius_ (0.07),
 
-      wave_         (new Wave),
-      som_          (new Som),
-      thread_       (0),
+      wave_              (new Wave),
+      som_               (new Som),
+      thread_            (0),
 
-      run_          (false),
-      restart_      (false),
-      wave_changed_ (false),
+      run_               (false),
+      restart_           (false),
+      wave_changed_      (false),
 
       cb_wave_loaded_    (0),
       cb_bands_          (0),
@@ -239,8 +240,11 @@ void Project::work_loop_()
     // ------- calculate som -------
 
     SOM_DEBUG("Project::work_loop_:: som init");
+
     som_->create(som_sizex_, som_sizey_, num_bands(), som_seed_);
-    som_->init(*wave_);
+    som_->insertWave(*wave_);
+    som_->initMap();
+
     // callback
     if (cb_som_ready_) cb_som_ready_();
 
@@ -250,15 +254,13 @@ void Project::work_loop_()
     timer.start();
     while (run_)
     {
-        // select grain to train :)
-        size_t grain_nr = rand() % num_grains();
-
         // set training parameters
         som_->alpha = som_alpha_;
         som_->radius = std::max(som_->sizex, som_->sizey) * som_radius_;
+        som_->local_search_radius = std::max(som_->sizex, som_->sizey) * som_search_radius_;
 
         // feed to map
-        som_->insert(&wave_->band[grain_nr][0]);
+        som_->insert();
 
         // callback after period
         if (timer.elapsed() > 200)

@@ -66,6 +66,8 @@ protected:
         *som_seed_,
         *som_alpha_,
         *som_radius_,
+        *som_sradius_,
+
         *som_dmode_,
         *som_band_nr_,
         *som_mult_;

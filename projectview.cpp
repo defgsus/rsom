@@ -12,14 +12,15 @@
 #include <QPushButton>
 #include <QFrame>
 #include <QLabel>
+#include <QFileDialog>
 
 enum SomDrawMode
 {
     SDM_SINGLE_BAND,
     SDM_MULTI_BAND,
+    SDM_IMAP,
     /* let this be the first of all modes that need the umap. (or change ProjectView::need_umap_) */
-    SDM_UMAP,
-    SDM_IMAP
+    SDM_UMAP
 };
 
 ProjectView::ProjectView(Project * p, QWidget *parent) :
@@ -74,6 +75,9 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
 
     som_radius_ = new Property("som_radius", "radius", "...");
     som_radius_->init(0.f, 1.f, project_->som_radius());
+
+    som_sradius_ = new Property("som_search_radius", "local search radius", "...");
+    som_sradius_->init(0.f, 2.f, project_->som_search_radius());
 
     som_dmode_ = new Property("som_draw_mode", "draw mode", "...");
     som_dmode_->init(
@@ -259,6 +263,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
                 som_seed_->       createWidget(this, l2, lt);
                 som_alpha_->      createWidget(this, l2, lt);
                 som_radius_->     createWidget(this, l2, lt);
+                som_sradius_->    createWidget(this, l2, lt);
 
                 l2->addStretch(2);
             }
@@ -272,6 +277,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
         som_seed_->       cb_value_changed(std::bind(&ProjectView::set_som_, this));
         som_alpha_->      cb_value_changed( [=]() { project_->set_som_alpha(som_alpha_->v_float[0]); } );
         som_radius_->     cb_value_changed( [=]() { project_->set_som_radius(som_radius_->v_float[0]); } );
+        som_sradius_->    cb_value_changed( [=]() { project_->set_som_search_radius(som_sradius_->v_float[0]); } );
 
         som_dmode_->      cb_value_changed( [&]() { setSomPaintMode_(); });
         som_band_nr_->    cb_value_changed( [=]() { somview_->paintBandNr(som_band_nr_->v_int[0]); });
@@ -291,10 +297,17 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
         project_->cb_som(       [&]()
         {
             //label->setText(QString::fromStdString(project_->som().info_str()));
-            if (need_imap_())
+            /*if (need_imap_())
+            {
                 project_->som().calc_imap();
-            else if (need_umap_())
+                somview_->paintMultiplier(
+                    som_mult_->v_float[0] / project_->wave().length_in_secs);
+            }
+            else */if (need_umap_())
+            {
                 project_->som().calc_umap();
+                //somview_->paintMultiplier(som_mult_->v_float[0]);
+            }
 
             somview_->update();
         } );
@@ -321,6 +334,8 @@ void ProjectView::setSomPaintMode_()
                                 somview_->paintMode(SomView::PM_Band); break;
         case SDM_MULTI_BAND:    somview_->paintMode(SomView::PM_MultiBand); break;
 
+        case SDM_IMAP:          somview_->paintMode(SomView::PM_IMap); break;
+
         default:                somview_->paintMode(SomView::PM_UMap); break;
     }
 
@@ -340,12 +355,24 @@ bool ProjectView::need_imap_()
 
 bool ProjectView::loadWave(/*const std::string& fn*/)
 {
+    QString fn =
+        QFileDialog::getOpenFileName(this,
+            "Open Sound",
+            "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT",
+            "Sound Files (*.wav *.riff *.voc);;All (*)"
+            );
+
+    if (fn.isNull()) return false;
+
     // disconnect views
     waveview_->setWave(0);
     somview_->setSom(0);
 
     if (!project_->load_wave(
-            "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/ldmvoice/danaykroyd.wav"
+                fn.toStdString()
+            // "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/rausch/radioscan_05_4.5.wav"
+            // "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/gong/metalfx01.wav"
+            // "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/ldmvoice/danaykroyd.wav"
             )) return false;
 
     return true;

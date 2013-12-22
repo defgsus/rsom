@@ -4,14 +4,20 @@
 #include <iostream>
 
 #define SOM_DEBUG(stream_arg__) \
-    std::cerr << stream_arg__ << "\n"
+    { std::cerr << stream_arg__ << "\n"; }
 
-/** noisy debug */
+
+
+/** SOM_DEBUGN(level, arg) - noisy debug with level */
 #if (0)
-#   define SOM_DEBUGN(stream_arg__) SOM_DEBUG(stream_arg__)
+#   define SOM_DEBUGN(level__, stream_arg__) \
+        if (level__<=SOM_DEBUGN_LEVEL) SOM_DEBUG(stream_arg__)
 #else
-#   define SOM_DEBUGN(stream_arg__)
+#   define SOM_DEBUGN(level__, stream_arg__) { }
 #endif
+
+#define SOM_DEBUGN_LEVEL 3
+
 
 #define SOM_ERROR(stream_arg__) \
     SOM_DEBUG("*error* " << stream_arg__)

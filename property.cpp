@@ -18,7 +18,7 @@ Property::Property(const QString& id, const QString& name, const QString& help)
         dim     (0),
         active_ (true)
 {
-    SOM_DEBUG("Property::Property(" << id.toStdString() << ", " << name.toStdString() << ")");
+    SOM_DEBUGN(0, "Property::Property(" << id.toStdString() << ", " << name.toStdString() << ")");
 }
 
 const char * Property::typeName[] =
@@ -134,7 +134,7 @@ void Property::setMinMax(float new_min_value, float new_max_value)
 
 void Property::onValueChanged_()
 {
-    SOM_DEBUGN("Property::onValueChanged_()");
+    SOM_DEBUGN(0, "Property::onValueChanged_()");
 
     if (cb_value_changed_) cb_value_changed_();
 }
@@ -284,7 +284,7 @@ QWidget * Property::getWidget_(QWidget * parent, QLayout * l0, size_t i)
                     list->setCurrentRow(k);
             }
             /// @todo nicer list height deduction
-            list->setFixedHeight(60);
+            //list->setFixedHeight(60);
             list->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 
             // get change event
@@ -312,7 +312,7 @@ QWidget * Property::getWidget_(QWidget * parent, QLayout * l0, size_t i)
     // get destroy event
     parent->connect(widget, &QWidget::destroyed, [=](QObject * obj)
     {
-        SOM_DEBUG("Property widget '" << id.toStdString() << "'destroyed " << obj);
+        SOM_DEBUGN(0, "Property widget '" << id.toStdString() << "'destroyed " << obj);
         disconnectWidget();
     } );
 

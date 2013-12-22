@@ -13,13 +13,13 @@ Som::Som()
 
         stat_av_best_match  (0),
 
-        radius      (0.1),
-        alpha       (0.1),
+        radius      (1),
+        alpha       (1),
+        local_search_radius (1),
 
-        draw_mode   (0),
-        nth_band    (0),
         generation  (0),
-        do_wrap     (false),
+
+        do_wrap     (true),
         do_index_all(false)
 {
     SOM_DEBUG("Som::Som()");
@@ -36,6 +36,8 @@ std::string Som::info_str() const
 }
 
 
+// ------------------ map ------------------
+
 void Som::create(int sizex, int sizey, int dim, int rand_seed)
 {
     SOM_DEBUG("Som::create(" << sizex << ", " << sizey << ", " << dim << ", " << rand_seed << ")");
@@ -43,103 +45,126 @@ void Som::create(int sizex, int sizey, int dim, int rand_seed)
     this->sizex = sizex;
     this->sizey = sizey;
     this->size = sizex * sizey;
+    this->size_diag = sqrt(sizex*sizex + sizey*sizey);
     this->dim = dim;
 
     // setup data
-    data.resize(size);
+    map.resize(size);
     for (size_t i=0; i<size; ++i)
-        data[i].resize(dim);
+        map[i].resize(dim);
 
     umap.resize(size);
+    imap.resize(size);
 
+    generation = 0;
 }
 
-// fill randomly
-// this will use the band data in 'wave' to initialize the map
-// to avoid a strong bias, the band data is taken apart and recombined randomly
-void Som::init(Wave& wave)
+void Som::initMap()
 {
-    SOM_DEBUG("Som::init(" << &wave << ")");
-
-    this->wave = &wave;
+    SOM_DEBUG("Som::initMap()");
 
     // clear stats
     stat_av_best_match = 0;
+
+    // clear data -> map specifics
+    for (auto i=data.begin(); i!=data.end(); ++i)
+        i->index = -1;
+
+    // clear umap
+    for (auto i=umap.begin(); i!=umap.end(); ++i)
+        *i = 0;
+
+    // clear imap
+    for (auto i=imap.begin(); i!=imap.end(); ++i)
+        *i = -1;
 
     // rather zero-out the map?
     if (rand_seed == -1)
     {
         for (size_t i=0; i<size; ++i)
             for (size_t j=0; j<dim; ++j)
-                data[i][j] = 0.f;
+                map[i][j] = 0.f;
     }
+    // randomly select and take apart the sample data
     else
     {
-        if (rand_seed == 0)
-            srand(time(NULL));
-        else
-            srand(rand_seed);
+        srand(rand_seed);
 
-        // randomly take apart the spectral data
         for (size_t i=0; i<size; ++i)
             for (size_t j=0; j<dim; ++j)
-                data[i][j] = 0.7*wave.band[rand()%wave.nr_grains][j];
+                map[i][j] = 0.7*data[rand()%data.size()].data[j];
     }
 
     generation = 0;
 }
 
 
+
+
+// ------------- data handling ------------
+
+void Som::clearData()
+{
+    SOM_DEBUG("Som::clearData()");
+
+    data.clear();
+}
+
+Som::Data * Som::insertData(const float * dat, int user_id)
+{
+    SOM_DEBUGN(1, "Som::insertData(" << dat << ", " << user_id << ")");
+
+    Data d;
+
+    d.data = dat;
+    d.user_id = user_id;
+    d.index = -1;
+    d.count = data.size();
+
+    data.push_back(d);
+    return &data.back();
+}
+
+
+void Som::insertWave(Wave& wave)
+{
+    SOM_DEBUG("Som::insertWave(" << &wave << ")");
+
+    this->wave = &wave;
+
+    clearData();
+
+    for (size_t i=0; i<wave.nr_grains; ++i)
+        insertData( &wave.band[i][0] );
+}
+
+
+
+
+
+
+
+
+
+
 // ---------- som algorithms --------------
 
-// find best matching entry for data
-// dat must point to 'dim' floats
-size_t Som::best_match(const float* dat)
+void Som::insert()
 {
-    float md = 10000000000.0;
-    int index = 0;
-    for (size_t i=0; i<size; ++i)
-    {
-        // difference to each cell
-        float d = 0.0;
-        for (size_t j=0; j<dim; ++j)
-            d += fabs(data[i][j] - dat[j]);
+    SOM_DEBUGN(3, "Som::insert()");
 
-        if (d<md) { md = d; index = i; }
+    if (!data.size())
+    {
+        SOM_ERROR("Som::insert() called without data");
+        return;
     }
 
-    stat_av_best_match += 0.1 * (md - stat_av_best_match);
-
-    return index;
-}
-
-// find best matching entry for data
-// avoids fields who's 'umap' value is equal to or above 'thresh'
-// 'dat' must point to 'dim' floats
-// (this is used to assign each cell a paritcular grain)
-size_t Som::best_match_avoid(const float* dat, float thresh)
-{
-    float md = 10000000000.0;
-    int index = 0;
-    for (size_t i=0; i<size; ++i)
-    if (umap[i]<thresh)
-    {
-        // difference to each cell
-        float d = 0.0;
-        for (size_t j=0; j<dim; ++j)
-            d += fabs(data[i][j] - dat[j]);
-
-        if (d<md) { md = d; index = i; }
-    }
-
-    return index;
-}
-
-void Som::insert(const float* dat)
-{
-    size_t index = best_match(dat);
+    // select grain to train :)
+    size_t nr = rand() % data.size();
+    size_t index = best_match(&data[nr]);
 
     // adjust cell and neighbourhood
+    const float radius_sq = radius*radius;
     const int rad = ceil(radius);
     for (int j=-rad; j<=rad; ++j)
     for (int i=-rad; i<=rad; ++i)
@@ -153,16 +178,20 @@ void Som::insert(const float* dat)
         if (x<0) x += sizex; else if (x>=(int)sizex) x -= sizex;
         if (y<0) y += sizey; else if (y>=(int)sizey) y -= sizey;
 
-        float r = sqrtf(i*i+j*j);
-        if (r>=radius) continue;
+        float r = i*i + j*j;
+        if (r >= radius_sq) continue;
 
-        // pointer to cell
-        float * pd = &data[y * sizex + x][0];
-        // pointer to input data
-        const float * ps = dat;
+        r = sqrtf(r);
+
         // amount to adjust
         float amt = alpha * (1.f - r/radius);
 
+        // pointer to cell
+        float * pd = &map[y * sizex + x][0];
+        // pointer to input data
+        const float * ps = &data[nr].data[0];
+
+        // blend data
         for (size_t k=0; k<dim; ++k, ++ps, ++pd)
             *pd += amt * (*ps - *pd);
     }
@@ -171,12 +200,137 @@ void Som::insert(const float* dat)
 }
 
 
+void Som::moveData(Data * data, size_t index)
+{
+    if (data->index>=0)
+    {
+        // remove old imap point
+        if (imap[data->index] == data->count)
+            imap[data->index] = -1;
+    }
+
+    imap[index] = data->count;
+
+    // keep info in data
+    data->index = index;
+}
+
+// ------------------ matching ----------------------
+
+size_t Som::best_match(Data * data)
+{
+    // search everywhere
+    if ( data->index < 0
+        || local_search_radius >= size_diag)
+    {
+        size_t i = best_match(data->data);
+        /// @todo need distance
+        moveData(data, i);
+        return i;
+    }
+
+    // search locally
+
+    float md = 1000000.0;
+    size_t index = data->index;
+
+    const float radius_sq = local_search_radius * local_search_radius;
+    const int rad = ceil(local_search_radius);
+    for (int j=-rad; j<=rad; ++j)
+    for (int i=-rad; i<=rad; ++i)
+    {
+        int x = i + (int)(data->index % sizex);
+        int y = j + (int)(data->index / sizex);
+
+        // skip if not wrapping and out-of-range
+        if (!do_wrap && (x<0 || y<0 || x>=(int)sizex || y>=(int)sizey)) continue;
+        // wrap
+        if (x<0) x += sizex; else if (x>=(int)sizex) x -= sizex;
+        if (y<0) y += sizey; else if (y>=(int)sizey) y -= sizey;
+
+        // within radius?
+        float r = i*i + j*j;
+        if (r >= radius_sq) continue;
+
+        const size_t ind = y * sizex + x;
+
+        // calc difference to cell
+        float d = get_distance(data, ind);
+        // best match?
+        if (d<md) { md = d; index = ind; }
+    }
+
+    // update index map
+    moveData(data, index);
+
+    return index;
+}
+
+
+
+
+size_t Som::best_match(const float* dat)
+{
+    float md = 10000000.0;
+    int index = 0;
+    for (size_t i=0; i<size; ++i)
+    {
+        // difference to each cell
+        float d = 0.0;
+        for (size_t j=0; j<dim; ++j)
+            d += fabs(map[i][j] - dat[j]);
+
+        if (d<md) { md = d; index = i; }
+    }
+
+    stat_av_best_match += 0.1 * (md - stat_av_best_match);
+
+    return index;
+}
+
+
+size_t Som::best_match_avoid(const float* dat, float thresh)
+{
+    float md = 1000000.0;
+    int index = 0;
+    for (size_t i=0; i<size; ++i)
+    if (umap[i]<thresh)
+    {
+        // difference to each cell
+        float d = 0.0;
+        for (size_t j=0; j<dim; ++j)
+            d += fabs(map[i][j] - dat[j]);
+
+        if (d<md) { md = d; index = i; }
+    }
+
+    return index;
+}
+
+
+
+
+
+
 // return distance between cell i1 and i2
-float Som::get_distance(size_t i1, size_t i2)
+float Som::get_distance(size_t i1, size_t i2) const
 {
     float d = 0.0;
-    float * p1 = &data[i1][0],
-          * p2 = &data[i2][0];
+    const
+    float * p1 = &map[i1][0],
+          * p2 = &map[i2][0];
+    for (size_t i=0; i<dim; ++i, ++p1, ++p2)
+        d += fabs(*p1 - *p2);
+
+    return d / dim;
+}
+
+float Som::get_distance(const Data * data, size_t ci) const
+{
+    float d = 0.0;
+    const
+    float * p1 = &data->data[0],
+          * p2 = &map[ci][0];
     for (size_t i=0; i<dim; ++i, ++p1, ++p2)
         d += fabs(*p1 - *p2);
 
@@ -185,7 +339,7 @@ float Som::get_distance(size_t i1, size_t i2)
 
 void Som::set_umap(float value)
 {
-    SOM_DEBUGN("Som::set_umap(" << value << ")");
+    SOM_DEBUGN(0, "Som::set_umap(" << value << ")");
 
     for (auto i=umap.begin(); i!=umap.end(); ++i)
         *i = value;
@@ -194,7 +348,7 @@ void Som::set_umap(float value)
 // calculates the distance to neighbours for each cell
 void Som::calc_umap()
 {
-    SOM_DEBUGN("Som::calc_umap()");
+    SOM_DEBUGN(0, "Som::calc_umap()");
 
     set_umap();
 
@@ -251,7 +405,7 @@ void Som::calc_umap()
 // find the best match for each grain and store the grain's position (in seconds)
 void Som::calc_imap()
 {
-    SOM_DEBUG("Som::calc_imap()");
+    SOM_DEBUGN(0, "Som::calc_imap()");
 
     // index-all mode. EVERY cell will get a grain index!
     if (do_index_all)
@@ -259,7 +413,7 @@ void Som::calc_imap()
         // each cell will be indexed with the best-matching band
         for (size_t i=0; i<size; ++i)
         {
-            int index = wave->get_best_match(&data[i][0]);
+            int index = wave->get_best_match(&map[i][0]);
             umap[i] = (float)index * wave->grain_size / wave->info.samplerate;
         }
         return;
@@ -284,42 +438,4 @@ void Som::calc_imap()
         if (umap[i]<0.f) umap[i] = 0.f;
 }
 
-
-/*
-// draw the map via opengl imidiate calls
-void draw(int xoff, int yoff, int width, int height)
-{
-    // size of one data-point
-    float   xs = (float)width / size,
-            ys = (float)height / size;
-
-    if (draw_mode == 1) make_umap(); else
-    if (draw_mode == 2) make_imap();
-
-    for (int j=0; j<size; ++j)
-    for (int i=0; i<size; ++i)
-    {
-        // determine color
-        float f;
-        switch (draw_mode)
-        {
-            default:    f = data[j*size+i][nth_band]; break;
-            case 1:     f = umap[j*size+i]; break;
-            case 2:     f = umap[j*size+i] / wave->length_in_secs; break;
-        }
-        color.set_color(f);
-
-        float   x = (float)i * xs + xoff,
-                y = (float)j * ys + yoff;
-
-        // filled rectangle
-        glBegin(GL_QUADS);
-            glVertex2f(x,y);
-            glVertex2f(x+xs,y);
-            glVertex2f(x+xs,y+ys);
-            glVertex2f(x,y+ys);
-        glEnd();
-    }
-}
-*/
 

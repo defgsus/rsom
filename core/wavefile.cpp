@@ -147,6 +147,11 @@ float Wave::get_bands(size_t xstart_, size_t xlen_, float amp)
 
     // --- the infamous triple-loop of a discrete fourier transform ---
 
+    /* No, this is not very fast. But accurate and completely user adjustable.
+     * E.g. you can choose the window width, number of bands and frequency range
+     * individually. To speed things up in the post 2010 world, use many cores ;)
+     */
+
     // for each grain
     for (size_t i=xstart; i<xend; ++i)
     {
@@ -157,15 +162,14 @@ float Wave::get_bands(size_t xstart_, size_t xlen_, float amp)
         for (size_t b=0; b!=nr_bands; ++b)
         {
             // frequency of each band
-            float f = (float)b/std::max(1, (int)nr_bands-1);
-            f = TAU * 0.5f * (min_freq + f * (max_freq - min_freq));
-                    /// info.samplerate;
+//            float f = (float)b/std::max(1, (int)nr_bands-1);
+//            f = TAU * 0.5f * (min_freq + f * (max_freq - min_freq));
 
             // for each sample within the scanning window
             float sa=0.0, ca=0.0;
             for (size_t j=0; j<window_width; j++)
             {
-                //const float t = (float)j / info.samplerate;
+//              const float t = (float)j / info.samplerate;
                 const int   si = i*grain_size + j;
                 const float sam = (si<info.frames)? wave[si] : 0.f;
 
@@ -202,8 +206,7 @@ void Wave::shape(float amp, float exp)
                 band[i][j] * amp )), exp);
 }
 
-// returns the index (grain) that best fit's the given band-data 'dat'
-// 'dat' needs to point at 'nr_bands' floats
+
 int Wave::get_best_match(const float* dat)
 {
     float mi = 10000000.0;

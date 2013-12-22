@@ -50,6 +50,8 @@ public:
 
     float              som_alpha()      const { return som_alpha_; }
     float              som_radius()     const { return som_radius_; }
+    float              som_search_radius()
+                                        const { return som_search_radius_; }
 
     // --- access ---------
 
@@ -69,6 +71,7 @@ public:
 
     void set_som_alpha(float alpha) { som_alpha_ = alpha; }
     void set_som_radius(float radius) { som_radius_ = radius; }
+    void set_som_search_radius(float radius) { som_search_radius_ = radius; }
 
     // ------- IO ---------
 
@@ -119,7 +122,7 @@ private:
 
     // SOM parameters
     size_t som_sizex_, som_sizey_, som_seed_;
-    float som_alpha_, som_radius_;
+    float som_alpha_, som_radius_, som_search_radius_;
 
     // -- data --
 
