@@ -33,7 +33,7 @@ void SomView::paintEvent(QPaintEvent * event)
 
     if (!som_ || !som_->dim)
     {
-        SOM_ERROR("SomView::paintEvent called without SOM");
+        SOM_DEBUG("SomView::paintEvent called without SOM");
         return;
     }
 

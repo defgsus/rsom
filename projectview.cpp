@@ -217,15 +217,65 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             { "single band", "spectral color", "neighbour distance", "grain index" },
             SDM_SINGLE_BAND
                 );
+    somd_dmode_->help =
+            "<b>display/calculation mode for <i>som view</i></b>"
+            "<p>This list lets you choose the contents that are displayed "
+            "in the <i>som view</i> as well as the data that is exported "
+            "to a reaktor table on <b>export</b>.</p>"
+            "<p><b>single band</b>: Each cell's color is determined by a single "
+            "band of the spectral data. The band is selected by <b>band index</b>. "
+            "This mode lets you study the distribution of certain frequencies across the map.</p>"
+            "<p><b>spectral color</b>: Each cell's color is a function of the whole "
+            "band data. The representation is completely arbitrary but similiar grains "
+            "are colored similiarily.</p>"
+            "<p><b>neighbour distance</b>: Classical <i>som</i> coloring where the color "
+            "represents the difference of each cell to it's neighbours. Darker areas in the "
+            "map represent clusters of similiar grains, while brighter colors represent "
+            "the edges between those clusters.</p>"
+            "<p><b>grain index</b>: The color represents the position-in-wave of the grain "
+            "that is associated to each cell. This is the important data for Reaktor to "
+            "build grain synthesizers. Black cells are not associated to grains.</p>";
 
     somd_band_nr_ = new Property("somd_band_nr", "band index");
     somd_band_nr_->init(0, 0, 0);
+    somd_band_nr_->help =
+            "<b>spectral band to display in single band mode</b>"
+            "<p>In <b>single band mode</b>, this value selects "
+            "the spectral band to display in the <i>som view</i>, "
+            "starting at index 0.</p>";
 
     somd_mult_ = new Property("somd_color_scale", "color scale");
     somd_mult_->init(0.0001f, 1000.f, 1.f);
+    somd_mult_->help =
+            "<b>amplitude of color in <i>som view</i></b>"
+            "<p>A simple multiplier for the colors displayed "
+            "in the <i>som view</i>. Especially useful for <b>spectral color</b> "
+            "display mode.</p>";
 
     somd_calc_imap_ = new Property("somd_calc_imap", "calculate imap");
     somd_calc_imap_->init(false);
+    somd_calc_imap_->help =
+            "<b>fully re-calculate the <i>index map</i> on each <i>som view</i> udpate</b>"
+            "<p>This feature is *experimental* right now.</p>";
+
+    const QString waveview_help =
+            "<b>waveform and spectral data display</b>"
+            "<p>The waveform to be analyzed is displayed here. It is split into a "
+            "number of <i>grains</i> (or slices) and each grain's frequency spectrum "
+            "is calculated by means of a <i>discrete fourier transform</i>. These grains "
+            "are then used to train the <i>self-organizing map</i> below.</p>"
+            "<p>Any change to the wave/analyze parameters on the right restarts the "
+            "analysis (and the <i>som</i> for that matter). The visual feedback in this "
+            "window should guide you to set the desired parameters.</p>";
+
+    const QString somview_help =
+            "<b>self-organizing map display</b>"
+            "<p>This window shows aspects of the <i>som</i> data, as defined with "
+            "the display parameters on the left. The map data is actually three-dimensional, "
+            "so different representation can be choosen to display it in two dimensions.</p>"
+            "<p>Be aware that changes to the <i>som</i> parameters on the left will <b>restart</b> the "
+            "<i>som</i> in most cases (except <b>alpha</b>, <b>radius</b>, <b>local radius</b>, "
+            "<b>ignore vacant</b> and <b>wrap</b>).</p>";
 
 
     SOM_DEBUG("ProjectView::ProjectView:: building widgets");
@@ -290,6 +340,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
         // ---- WAVE VIEW ----
 
         waveview_ = new WaveView(this);
+        waveview_->setToolTip(waveview_help);
 
         l1 = new QHBoxLayout(0);
         l0->addLayout(l1);
@@ -349,6 +400,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
         l0->addLayout(l1);
         {
             somview_ = new SomView(this);
+            somview_->setToolTip(somview_help);
 
             // --- SOM view parameters ---
 
