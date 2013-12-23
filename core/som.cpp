@@ -271,6 +271,7 @@ size_t Som::best_match(Data * data)
     return index;
 }
 
+
 size_t Som::best_match_avoid(Data * data)
 {
     // search everywhere
@@ -306,7 +307,9 @@ size_t Som::best_match_avoid(Data * data)
         const size_t ind = y * sizex + x;
 
         // ignore vacant cells
-        if (imap[ind] >= 0 && imap[ind] != data->count) continue;
+        if (imap[ind] >= 0
+            //&& imap[ind] != data->count
+            ) continue;
 
         // within radius?
         float r = i*i + j*j;

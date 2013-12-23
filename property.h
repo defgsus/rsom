@@ -64,7 +64,7 @@ public:
 
     // --------- functions ----------
 
-    Property(const QString& id, const QString& name, const QString& help);
+    Property(const QString& id, const QString& name, const QString& help = "");
 
     /** single bool */
     void init(bool value);

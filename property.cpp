@@ -324,6 +324,8 @@ QWidget * Property::getWidget_(QWidget * parent, QLayout * l0, size_t i)
     // can't be actually
     if (!widget) return 0;
 
+    widget->setToolTip(help);
+
     // get destroy event
     parent->connect(widget, &QWidget::destroyed, [=](QObject * obj)
     {
