@@ -28,10 +28,10 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
     project_    (p)
 {
     // some signals for threadsafety
-
+    // we use this for passing events from the Project back to the GUI thread
     connect(this, SIGNAL(start_som_signal()), this, SLOT(start_som()) );
     connect(this, SIGNAL(som_update_signal()), this, SLOT(som_update()) );
-
+    connect(this, SIGNAL(start_training_signal()), this, SLOT(startTraining()) );
 
     // --- properties ---
 
@@ -111,6 +111,11 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             "colors from the <i>som</i> display. ";
 
     // --- som properties
+
+    som_run_ = new Property("", "TRAINING");
+    som_run_->init(true);
+    som_run_->help =
+            "<b>start and stop <i>som</i> training</b>";
 
     som_size_ = new Property("som_size", "som size");
     som_size_->init(2, 2<<16, project_->som_sizex(), project_->som_sizey());
@@ -273,7 +278,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             "<p>This window shows aspects of the <i>som</i> data, as defined with "
             "the display parameters on the left. The map data is actually three-dimensional, "
             "so different representation can be choosen to display it in two dimensions.</p>"
-            "<p>Be aware that changes to the <i>som</i> parameters on the left will <b>restart</b> the "
+            "<p>Be aware that changes to the <i>som</i> parameters on the right will <b>restart</b> the "
             "<i>som</i> in most cases (except <b>alpha</b>, <b>radius</b>, <b>local radius</b>, "
             "<b>ignore vacant</b> and <b>wrap</b>).</p>";
 
@@ -426,6 +431,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             l1->addLayout(l2);
             {
                 const Property::LayoutType lt = Property::H_WIDGET_LABEL;
+                som_run_->        createWidget(this, l2, lt);
                 som_size_use_f_-> createWidget(this, l2, lt);
                 som_sizef_->      createWidget(this, l2, lt);
                 som_size_->       createWidget(this, l2, lt);
@@ -450,6 +456,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
         somd_mult_->      cb_value_changed( [&]() { somview_->paintMultiplier(somd_mult_->v_float[0]); });
         somd_calc_imap_-> cb_value_changed( [&]() { checkWidgets_(); });
 
+        som_run_->        cb_value_changed( [&]() { if (som_run_->v_bool[0]) startTraining(); else stopTraining(); } );
         som_size_use_f_-> cb_value_changed( [&]() { checkWidgets_(); set_som_(); } );
         som_sizef_->      cb_value_changed( std::bind(&ProjectView::set_som_, this) );
         som_size_->       cb_value_changed( [&]() { if (som_size_to_g_->v_bool[0]) set_wave_(); else set_som_(); });
@@ -485,7 +492,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
         // when bands are finished, the som can be (re-)created
         project_->cb_bands_finished( [&]()
         {
-            // do not let the wave thread interfere with gui
+            // note: do not let the wave thread interfere with gui
             start_som_signal();
         } );
 
@@ -495,6 +502,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             // connect the view
             somview_->setSom(&project_->som());
             setSomPaintMode_();
+            start_training_signal();
         } );
 
         // when SOM is updated
@@ -646,6 +654,19 @@ void ProjectView::setSomPaintMode_()
         default:                somview_->paintMode(SomView::PM_UMap); break;
     }
 
+    if (!project_->running())
+        somview_->update();
+}
+
+void ProjectView::startTraining()
+{
+    if (project_->som_ready() && som_run_->v_bool[0])
+        project_->startSomThread();
+}
+
+void ProjectView::stopTraining()
+{
+    project_->stopSomThread();
 }
 
 void ProjectView::calc_maps_()

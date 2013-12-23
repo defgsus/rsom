@@ -43,6 +43,9 @@ public:
     const Som&         som()            const { return *som_; }
           Som&         som()                  { return *som_; }
 
+    bool               analyzing()      const { return run_wave_; }
+    bool               running()        const { return run_som_; }
+
     size_t             num_bands()      const { return wave_->nr_bands; }
     size_t             num_grains()     const { return wave_->nr_grains; }
     size_t             grain_size()     const { return wave_->grain_size; }
@@ -75,8 +78,13 @@ public:
     void set(size_t nr_bands, float min_freq, float max_freq, size_t grain_size, size_t window_width,
              float band_amp_ = 0.f, float band_exp_ = 1.f);
 
-    /** set som parameters, restarts the SOM */
+    /** set som parameters, restarts the SOM.
+        On return of the call, the som will be initialized and the cb_som_ready callback
+        will be send.
+        Subsequently, startSomThread() and stopSomThread() can be used to start/stop training. */
     void set_som(size_t sizex, size_t sizey, int rand_seed);
+
+    // -------- live training parameters ----------
 
     void set_som_alpha(float alpha) { som_alpha_ = alpha; }
     void set_som_radius(float radius) { som_radius_ = radius; }

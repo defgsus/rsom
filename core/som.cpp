@@ -92,8 +92,23 @@ void Som::initMap()
         srand(rand_seed);
 
         for (size_t i=0; i<size; ++i)
+        {
+            // circular amplitude
+            const float x = (float)(i%sizex)/sizex - 0.5f,
+                        y = (float)(i/sizex)/sizey - 0.5f,
+                        amp = 1.f / (1.f + 5.f * sqrtf(x*x+y*y));
+
+            // one random sample
+            const int dat = rand()%data.size();
             for (size_t j=0; j<dim; ++j)
-                map[i][j] = 0.7*data[rand()%data.size()].data[j];
+            {
+                // look around a bit for each band
+                const int index = std::max(0, std::min((int)data.size()-1,
+                        dat + (rand()%20) - 10
+                    ));
+                map[i][j] = data[index].data[j] * amp;
+            }
+        }
     }
 
     generation = 0;

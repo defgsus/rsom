@@ -50,6 +50,7 @@ protected:
 
     void paint_waveform();
     void paint_bands();
+    void paint_color_scale();
 
     const Wave * wave_;
 
@@ -57,6 +58,8 @@ protected:
 
     bool draw_spec_colors_,
         draw_waveform_;
+
+    int csheight_;
 };
 
 #endif // WAVEVIEW_H

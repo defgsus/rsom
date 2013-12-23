@@ -34,7 +34,8 @@ SOURCES += main.cpp \
     waveview.cpp \
     core/som.cpp \
     somview.cpp \
-    property.cpp
+    property.cpp \
+    colorscale.cpp
 
 HEADERS += \
     mainwindow.h \

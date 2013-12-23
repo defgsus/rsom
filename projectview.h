@@ -30,10 +30,14 @@ public:
 signals:
     void start_som_signal();
     void som_update_signal();
+    void start_training_signal();
 
 public slots:
     void start_som() { set_som_(); }
     void som_update();
+
+    void startTraining();
+    void stopTraining();
 
 protected:
     /** check sanity of Property widgets. */
@@ -67,6 +71,7 @@ protected:
         *waved_waveform_,
         *waved_spec_colors_,
 
+        *som_run_,
         *som_size_,
         *som_size_use_f_,
         *som_sizef_,

@@ -25,6 +25,7 @@ void SomView::paintBandNr(size_t band_nr)
 {
     band_sel_ = band_nr;
     pmode_ = PM_Band;
+    update();
 }
 
 void SomView::paintEvent(QPaintEvent * event)

@@ -41,10 +41,11 @@ public:
     void setSom(const Som * som) { som_ = som; }
 
     /** set scale for colors */
-    void paintMultiplier(float pm) { paint_mult_ = pm; }
+    void paintMultiplier(float pm) { paint_mult_ = pm; update(); }
 
     /** Sets what to paint. */
-    void paintMode(PaintMode mode) { pmode_ = mode; }
+    void paintMode(PaintMode mode) { pmode_ = mode; update(); }
+
     /** Selects PM_Band, and sets the band to draw */
     void paintBandNr(size_t band_nr);
 
