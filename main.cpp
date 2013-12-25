@@ -1,6 +1,7 @@
 #include <QApplication>
-#include "mainwindow.h"
 
+#include "mainwindow.h"
+#include "helpwindow.h"
 
 int main(int argc, char *argv[])
 {
@@ -8,6 +9,9 @@ int main(int argc, char *argv[])
 
     MainWindow win;
     win.show();
+
+    HelpWindow help;
+    help.show();
 
     return a.exec();
 }

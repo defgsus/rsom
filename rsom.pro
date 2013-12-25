@@ -35,7 +35,8 @@ SOURCES += main.cpp \
     core/som.cpp \
     somview.cpp \
     property.cpp \
-    colorscale.cpp
+    colorscale.cpp \
+    helpwindow.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -48,4 +49,8 @@ HEADERS += \
     core/log.h \
     somview.h \
     colorscale.h \
-    property.h
+    property.h \
+    helpwindow.h
+
+RESOURCES += \
+    resources.qrc

@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/rsom">
+        <file>LICENSE</file>
+    </qresource>
+</RCC>
