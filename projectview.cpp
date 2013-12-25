@@ -426,6 +426,10 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
                 somd_mult_->     createWidget(this, l2, lt);
                 somd_calc_imap_->createWidget(this, l2, lt);
 
+                l2->addSpacing(10);
+                sominfo_ = new QLabel(this);
+                l2->addWidget(sominfo_);
+
                 l2->addStretch(2);
             }
 
@@ -700,7 +704,8 @@ void ProjectView::calc_maps_()
 
 void ProjectView::som_update()
 {
-    //label->setText(QString::fromStdString(project_->som().info_str()));
+    sominfo_->setText(
+        QString::fromStdString(project_->info_str()));
 
     somview_->update();
 }

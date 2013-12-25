@@ -19,6 +19,8 @@ class Properties;
 class WaveView;
 class SomView;
 
+class QLabel;
+
 class ProjectView : public QFrame
 {
     Q_OBJECT
@@ -61,6 +63,7 @@ protected:
     Project * project_;
     WaveView * waveview_;
     SomView * somview_;
+    QLabel * sominfo_;
 
     // properties
     Properties * props_;

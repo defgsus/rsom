@@ -35,6 +35,8 @@ public:
 
     // --- get properties ---
 
+    const std::string  info_str()       const;
+
     const std::string& filename()       const { return filename_; }
     const std::string& name()           const { return name_; }
     const std::string& wavename()       const { return wave_->filename; }
@@ -169,6 +171,10 @@ private:
 
         som_ready_;
 
+    int inserts_per_second_;
+    size_t last_generation_;
+
+    // -- callbacks --
     std::function<void()>
         cb_wave_loaded_,
         cb_bands_,

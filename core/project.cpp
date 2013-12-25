@@ -4,7 +4,9 @@
 
 #include <functional>
 #include <future>
+#include <sstream>
 
+/// @todo is there a std implementation of something like QElapsedTimer?
 #include <QElapsedTimer>
 
 
@@ -57,7 +59,13 @@ Project::~Project()
     if (wave_) delete wave_;
 }
 
-
+const std::string Project::info_str() const
+{
+    std::stringstream s;
+    s << som_->info_str()
+      << "\nsamples per second " << inserts_per_second_;
+    return s.str();
+}
 
 // --- access ---------
 /*
@@ -368,6 +376,8 @@ void Project::work_loop_()
 
     SOM_DEBUG("Project::work_loop_:: starting training loop");
 
+    last_generation_ = som_->generation;
+
     QElapsedTimer timer;
     timer.start();
     while (run_som_)
@@ -383,6 +393,11 @@ void Project::work_loop_()
         // callback after period
         if (timer.elapsed() > 200)
         {
+            // messure speed
+            inserts_per_second_ =
+                    (som_->generation - last_generation_) / 0.2;
+            last_generation_ = som_->generation;
+
             SOM_CALLBACK(cb_som);
             timer.start();
         }

@@ -29,7 +29,7 @@ HelpWindow::HelpWindow(const ProjectView & view, QWidget *parent) :
 
             tabout_ = new QTextBrowser();
             tab_->addTab(tabout_, "about");
-
+            tab_->setCurrentIndex(2);
 
     load_();
 }
@@ -53,12 +53,12 @@ void HelpWindow::load_()
 
     tabout_->setHtml(
                     tr("<h2>Welcome to r-som</h2>"
-                       "<p>This program generates <i>Self-Organizing Maps</i> from audio files and "
+                       "<p>r-som generates <i>Self-Organizing Maps</i> from audio files and "
                        "exports them to the <i>NI Reaktor</i> table format.</p>"
-                       "<p>This software is free as in freedom. See the license for details.</p>"
+                       "<p>This is free software. Free as in freedom. See the license for details.</p>"
                        "<pre>build %1 %2</pre>"
                        "<p>authors:</p>"
-                       "<pre>stefan.berke@modular-audio-graphics.com</pre>"
+                       "<pre>stefan.berke@modular-audio-graphics.com, 2013</pre>"
                        ).arg(__DATE__).arg(__TIME__)
                     );
 

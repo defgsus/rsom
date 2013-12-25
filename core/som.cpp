@@ -4,6 +4,8 @@
 
 #include <sstream>
 
+#define SOM_FOLLOW_SPEED 1.f/5000.f
+
 Som::Som()
     :   sizex               (0),
         sizey               (0),
@@ -30,7 +32,8 @@ std::string Som::info_str() const
 {
     std::stringstream s;
     s << sizex << "x" << sizey << "x" << dim << " (" << sizex*sizey*dim << ")"
-      << "\ngeneration " << generation
+      << "\ngeneration " << generation << " (" << (generation/1000000) << "M)"
+      << "\nepoch      " << generation / std::max((size_t)1, data.size())
       << "\nbest match " << stat_av_best_match
     ;
     return s.str();
@@ -280,6 +283,8 @@ size_t Som::best_match(Data * data)
         if (d<md) { md = d; index = ind; }
     }
 
+    stat_av_best_match += SOM_FOLLOW_SPEED * (md - stat_av_best_match);
+
     // update index map
     moveData(data, index);
 
@@ -338,6 +343,8 @@ size_t Som::best_match_avoid(Data * data)
 
     if (!found) return -1;
 
+    stat_av_best_match += SOM_FOLLOW_SPEED * (md - stat_av_best_match);
+
     // update index map
     moveData(data, index);
 
@@ -361,7 +368,7 @@ size_t Som::best_match(const float* dat)
         if (d<md) { md = d; index = i; }
     }
 
-    stat_av_best_match += 0.1 * (md - stat_av_best_match);
+    stat_av_best_match += SOM_FOLLOW_SPEED * (md - stat_av_best_match);
 
     return index;
 }
@@ -382,6 +389,9 @@ size_t Som::best_match_avoid(const float* dat)
 
         if (d<md) { md = d; index = i; }
     }
+
+    if (index>=0)
+        stat_av_best_match += SOM_FOLLOW_SPEED * (md - stat_av_best_match);
 
     return index;
 }
