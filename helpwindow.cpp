@@ -1,6 +1,8 @@
 #include "helpwindow.h"
 
 #include "core/log.h"
+#include "properties.h"
+#include "projectview.h"
 
 #include <QFile>
 #include <QTextStream>
@@ -9,9 +11,10 @@
 #include <QTextBrowser>
 
 
-HelpWindow::HelpWindow(QWidget *parent) :
-    QWidget(parent)
-{
+HelpWindow::HelpWindow(const ProjectView & view, QWidget *parent) :
+    QWidget(parent),
+    props_  (view.properties())
+{   
     auto l0 = new QVBoxLayout(this);
     setLayout(l0);
 
@@ -34,6 +37,8 @@ HelpWindow::HelpWindow(QWidget *parent) :
 
 void HelpWindow::load_()
 {
+    // --- license ---
+
     QFile file(":/rsom/LICENSE");
     if (!file.open(QFile::ReadOnly | QFile::Text))
     {
@@ -43,6 +48,8 @@ void HelpWindow::load_()
 
     QTextStream in(&file);
     tlicense_->setPlainText(in.readAll());
+
+    // --- about ---
 
     tabout_->setHtml(
                     tr("<h2>Welcome to r-som</h2>"
@@ -54,4 +61,24 @@ void HelpWindow::load_()
                        "<pre>stefan.berke@modular-audio-graphics.com</pre>"
                        ).arg(__DATE__).arg(__TIME__)
                     );
+
+    // --- documentation ---
+
+    QString s;
+    QTextStream str(&s);
+
+
+    // property help
+
+    str << "<h2>properties</h2>";
+
+    // extract each Property::help
+    for (auto i=props_.property.begin(); i!=props_.property.end(); ++i)
+    {
+        str << "<a name=\"" << (*i)->id << "\"></a>"
+            << "<h3><b>" << (*i)->name << "</b></h3>"
+            << "<p>" << (*i)->help << "</p>";
+    }
+
+    tdoc_->setHtml( s );
 }

@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
     MainWindow win;
     win.show();
 
-    HelpWindow help;
+    HelpWindow help(*win.projectView());
     help.show();
 
     return a.exec();

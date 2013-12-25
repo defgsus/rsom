@@ -3,6 +3,9 @@
 
 #include <QWidget>
 
+class ProjectView;
+class Properties;
+
 class QTextBrowser;
 class QTabWidget;
 
@@ -10,7 +13,7 @@ class HelpWindow : public QWidget
 {
     Q_OBJECT
 public:
-    explicit HelpWindow(QWidget *parent = 0);
+    explicit HelpWindow(const ProjectView & view, QWidget *parent = 0);
 
     QSize sizeHint() const { return QSize(800,500); }
 
@@ -19,6 +22,8 @@ signals:
 public slots:
 
 protected:
+
+    const Properties& props_;
 
     QTabWidget * tab_;
     QTextBrowser

@@ -15,6 +15,7 @@
 
 class Project;
 class Property;
+class Properties;
 class WaveView;
 class SomView;
 
@@ -24,8 +25,11 @@ class ProjectView : public QFrame
 public:
     /** constructs widgets from given project */
     explicit ProjectView(Project * project, QWidget *parent = 0);
+    virtual ~ProjectView();
 
     bool loadWave();
+
+    const Properties & properties() const { return *props_; }
 
 signals:
     void start_som_signal();
@@ -59,6 +63,7 @@ protected:
     SomView * somview_;
 
     // properties
+    Properties * props_;
     Property
         *wave_bands_,
         *wave_freq_,

@@ -3,6 +3,7 @@
 #include "core/log.h"
 #include "core/project.h"
 #include "property.h"
+#include "properties.h"
 #include "waveview.h"
 #include "somview.h"
 
@@ -25,7 +26,8 @@ enum SomDrawMode
 
 ProjectView::ProjectView(Project * p, QWidget *parent) :
     QFrame(parent),
-    project_    (p)
+    project_    (p),
+    props_      (new Properties)
 {
     // some signals for threadsafety
     // we use this for passing events from the Project back to the GUI thread
@@ -37,7 +39,11 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
 
     SOM_DEBUG("ProjectView::ProjectView:: creating properties");
 
-    wave_bands_ = new Property("wave_bands", "number bands");
+    #define SOM_NEW_PROPERTY(var__, id__, name__) \
+        var__ = new Property(id__, name__); \
+        props_->add(var__);
+
+    SOM_NEW_PROPERTY(wave_bands_, "wave_bands", "number bands");
     wave_bands_->init(1, 100000, project_->num_bands());
     wave_bands_->help =
             "<b>number of frequency bands</b>"
@@ -45,9 +51,9 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             "for training the <i>som</i>.</p>"
             "<p>Generally, more bands = more accurate = slower. "
             "In most cases about 16 to 32 bands can be just enough, "
-            "about 80 are very accurate.</p>";
+            "about 80 are quite accurate.</p>";
 
-    wave_freq_ = new Property("wave_freq", "frequency range");
+    SOM_NEW_PROPERTY(wave_freq_, "wave_freq", "frequency range");
     wave_freq_->init(0.0001f, 100000.f, project_->wave().min_freq, project_->wave().max_freq);
     wave_freq_->help =
             "<b>low and high frequency range (hz)</b>"
@@ -55,7 +61,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             "and high value.</p>"
             "<p>Try to narrow-in on the range you are interested in to raise accuracy.</p>";
 
-    wave_grain_size_ = new Property("wave_grain_size", "grain size");
+    SOM_NEW_PROPERTY(wave_grain_size_, "wave_grain_size", "grain size");
     wave_grain_size_->init(1, 2<<16, project_->wave().grain_size);
     wave_grain_size_->help =
             "<b>grain size (samples)</b>"
@@ -65,28 +71,28 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             "<p>The 'grains' can be thought of as indices into the wave file with "
             "associated spectral vectors each.</p>";
 
-    wave_window_ = new Property("wave_window_width", "window width");
+    SOM_NEW_PROPERTY(wave_window_, "wave_window_width", "window width");
     wave_window_->init(1, 2<<16, project_->wave().window_width);
     wave_window_->help =
             "<b>fourier transform window width (samples)</b>"
             "<p>The size of the window determines the length of the sample "
             "that is taken into account for the spectral calculation of each grain.</p>";
 
-    wave_band_norm_ = new Property("wave_band_norm", "normalize\nbands");
+    SOM_NEW_PROPERTY(wave_band_norm_, "wave_band_norm", "normalize\nbands");
     wave_band_norm_->init(false);
     wave_band_norm_->help =
             "<b>normalize band data after calculation</b>"
             "<p>Once the spectral data is analyzed, it can be normalized to nicely "
             "fit between 0 and 1.</p>";
 
-    wave_band_amp_ = new Property("wave_band_amp", "band amp");
+    SOM_NEW_PROPERTY(wave_band_amp_, "wave_band_amp", "band amp");
     wave_band_amp_->init(0.0001f, 1000.f, project_->band_amp());
     wave_band_amp_->help =
             "<b>spectral data amplitude</b>"
             "<p>Multiplier for the spectral data, used to scale the data into a "
             "user-defined range.</p>";
 
-    wave_band_exp_ = new Property("wave_band_exp", "band exp");
+    SOM_NEW_PROPERTY(wave_band_exp_, "wave_band_exp", "band exp");
     wave_band_exp_->init(0.0001f, 100.f, project_->band_exponent());
     wave_band_exp_->help =
             "<b>spectral data exponent</b>"
@@ -95,12 +101,12 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             "<pre>clamp(value * amplitude) ^ exponent</pre> "
             "Where clamp() means the value is clamped between 0 and 1.</p>";
 
-    waved_waveform_ = new Property("waved_waveform", "draw waveform");
+    SOM_NEW_PROPERTY(waved_waveform_, "waved_waveform", "draw waveform");
     waved_waveform_->init(true);
     waved_waveform_->help =
             "<b>switch display of waveform on/off</b>";
 
-    waved_spec_colors_ = new Property("waved_spec_colors", "draw spec.\ncolors");
+    SOM_NEW_PROPERTY(waved_spec_colors_, "waved_spec_colors", "draw spec.\ncolors");
     waved_spec_colors_->init(false);
     waved_spec_colors_->help =
             "<b>switch between <i>band-color</i> and <i>spectral-color</i></b>."
@@ -112,19 +118,19 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
 
     // --- som properties
 
-    som_run_ = new Property("", "TRAINING");
+    SOM_NEW_PROPERTY(som_run_, "", "TRAINING");
     som_run_->init(true);
     som_run_->help =
             "<b>start and stop <i>som</i> training</b>";
 
-    som_size_ = new Property("som_size", "som size");
+    SOM_NEW_PROPERTY(som_size_, "som_size", "som size");
     som_size_->init(2, 2<<16, project_->som_sizex(), project_->som_sizey());
     som_size_->help =
             "<b><i>som</i> x/y size in pixels/cells</b>"
             "<p>The size of the self-organizing map. It is only editable, "
             "when <b>som size from grains</b> is not selected.</p>";
 
-    som_size_use_f_ = new Property("som_size_use_f", "som size\nfrom grains");
+    SOM_NEW_PROPERTY(som_size_use_f_, "som_size_use_f", "som size\nfrom grains");
     som_size_use_f_->init(true);
     som_size_use_f_->help =
             "<b>determine <i>som</i> size from number of grains</b>"
@@ -132,7 +138,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             "side-length choosen so that the number of grains in the wave file "
             "will match the number of cells.</p>";
 
-    som_sizef_ = new Property("som_sizef", "factor");
+    SOM_NEW_PROPERTY(som_sizef_, "som_sizef", "factor");
     som_sizef_->init(0.001f, 10.f, 1.1f);
     som_sizef_->help =
             "<b>number of grains to <i>som</i> size ratio</b>"
@@ -143,7 +149,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             "to 1. To create valeys of undefined indices between clusters, select a value "
             "larger than 1.</p>";
 
-    som_size_to_g_ = new Property("som_size_to_grains", "som size\nto num. grains");
+    SOM_NEW_PROPERTY(som_size_to_g_, "som_size_to_grains", "som size\nto num. grains");
     som_size_to_g_->init(false);
     som_size_to_g_->help =
             "<b>determine number of grains from size of <i>som</i></b>"
@@ -152,7 +158,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             "you want to calculate a map of a certain size and where the number "
             "of grains should fill the map.</p>";
 
-    som_seed_ = new Property("som_seed", "random seed");
+    SOM_NEW_PROPERTY(som_seed_, "som_seed", "random seed");
     som_seed_->init(-(2<<16), 2<<16, project_->som_seed());
     som_seed_->help =
             "<b>random seed for initializing <i>som</i></b>"
@@ -161,7 +167,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             "with this number. Keeping the see and nmt changing any other settings "
             "would recreate the same map again and again.</p>";
 
-    som_alpha_ = new Property("som_alpha", "alpha");
+    SOM_NEW_PROPERTY(som_alpha_, "som_alpha", "alpha");
     som_alpha_->init(0.f, 1.f, project_->som_alpha());
     som_alpha_->help =
             "<b>opacity of data insertions [0,1].</b>"
@@ -171,7 +177,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             "<p>There is enough paperwork on it's own dedicated to this value. "
             "Probably in most cases it's best to keep it below 0.1.</p> ";
 
-    som_radius_ = new Property("som_radius", "radius");
+    SOM_NEW_PROPERTY(som_radius_, "som_radius", "radius");
     som_radius_->init(0.f, 1.f, project_->som_radius());
     som_radius_->help =
             "<b>radius of data insertions [0,1].</b>"
@@ -180,7 +186,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             "of the <i>som</i>.</p>"
             "<p>Hard to describe, easy to experiment with...</p>";
 
-    som_sradius_ = new Property("som_search_radius", "local search radius");
+    SOM_NEW_PROPERTY(som_sradius_, "som_search_radius", "local search radius");
     som_sradius_->init(0.f, 2.f, project_->som_search_radius());
     som_sradius_->help =
             "<b>radius of local search [0,2]</b>"
@@ -194,7 +200,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             "<p>Note that this value has particularily more significance "
             "when <b>ignore vacant cells</b> is activated.</p>";
 
-    som_non_dupl_ = new Property("som_no_duplicates", "ignore vacant cells");
+    SOM_NEW_PROPERTY(som_non_dupl_, "som_no_duplicates", "ignore vacant cells");
     som_non_dupl_->init(false);
     som_non_dupl_->help =
             "<b>ignore vacant cells for data matching</b>"
@@ -208,14 +214,14 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             "use this mode. A cell is only considered as a match for a data "
             "sample when no other data sample was inserted before.</p>";
 
-    som_wrap_ = new Property("som_wrap_edge", "wrap on edges");
+    SOM_NEW_PROPERTY(som_wrap_, "som_wrap_edge", "wrap on edges");
     som_wrap_->init(true);
     som_wrap_->help =
             "<b>wrap map operations on edges</b>"
             "<p>Operations like adjusting the neighbourhood on data inserts "
             "that would normally be clipped on edges can be wrapped around.</p>";
 
-    somd_dmode_ = new Property("somd_mode", "draw mode");
+    SOM_NEW_PROPERTY(somd_dmode_, "somd_mode", "draw mode");
     somd_dmode_->init(
             { SDM_SINGLE_BAND, SDM_MULTI_BAND, SDM_UMAP, SDM_IMAP },
             { "single_band", "multi_band", "umap", "imap" },
@@ -241,7 +247,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             "that is associated to each cell. This is the important data for Reaktor to "
             "build grain synthesizers. Black cells are not associated to grains.</p>";
 
-    somd_band_nr_ = new Property("somd_band_nr", "band index");
+    SOM_NEW_PROPERTY(somd_band_nr_, "somd_band_nr", "band index");
     somd_band_nr_->init(0, 0, 0);
     somd_band_nr_->help =
             "<b>spectral band to display in single band mode</b>"
@@ -249,7 +255,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             "the spectral band to display in the <i>som view</i>, "
             "starting at index 0.</p>";
 
-    somd_mult_ = new Property("somd_color_scale", "color scale");
+    SOM_NEW_PROPERTY(somd_mult_, "somd_color_scale", "color scale");
     somd_mult_->init(0.0001f, 1000.f, 1.f);
     somd_mult_->help =
             "<b>amplitude of color in <i>som view</i></b>"
@@ -257,11 +263,13 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             "in the <i>som view</i>. Especially useful for <b>spectral color</b> "
             "display mode.</p>";
 
-    somd_calc_imap_ = new Property("somd_calc_imap", "calculate imap");
+    SOM_NEW_PROPERTY(somd_calc_imap_, "somd_calc_imap", "calculate imap");
     somd_calc_imap_->init(false);
     somd_calc_imap_->help =
             "<b>fully re-calculate the <i>index map</i> on each <i>som view</i> udpate</b>"
             "<p>This feature is *experimental* right now.</p>";
+
+    #undef SOM_NEW_PROPERTY
 
     const QString waveview_help =
             "<b>waveform and spectral data display</b>"
@@ -516,6 +524,11 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
         } );
 
     checkWidgets_();
+}
+
+ProjectView::~ProjectView()
+{
+    delete props_;
 }
 
 void ProjectView::checkWidgets_()

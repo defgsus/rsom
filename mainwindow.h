@@ -21,6 +21,9 @@ class MainWindow : public QWidget
 public:
     explicit MainWindow(QWidget *parent = 0);
 
+    const Project *     project()     const { return project_; }
+    const ProjectView * projectView() const { return view_; }
+
 signals:
 
 public slots:
