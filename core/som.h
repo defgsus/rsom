@@ -1,14 +1,26 @@
+/*  This is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    as published by the Free Software Foundation; either
+    version 3.0 of the License, or (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this software; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+*/
 /** @file
     @brief self-organizing map class for use with reaktor_som
 
     @author def.gsus- (berke@cymatrix.org)
     @version 2012/07/11
     @version 2013/12/18 tidied up and removed opengl stuff, made x/y separate
-    @version 2012/12/21 starting local search
+    @version 2012/12/21 started local search
 
     copyright 2012, 2013 stefan.berke @ modular-audio-graphics.com
-
-    This program is coverd by the GNU General Public License
 */
 #ifndef SOM_H_INCLUDED
 #define SOM_H_INCLUDED

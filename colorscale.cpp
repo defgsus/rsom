@@ -1,3 +1,17 @@
+/*  This is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License
+    as published by the Free Software Foundation; either
+    version 3.0 of the License, or (at your option) any later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this software; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+*/
 #include "colorscale.h"
 
 
@@ -29,7 +43,7 @@ QColor ColorScale::get(const float f) const
     return color_map[i];
 }
 
-float sinc(float x) { return (cosf(x*x*11.f) * 0.5f + 0.4f + 0.1f * cos(x*29.f)); }
+float sinc(float x) { return (cosf(x*x*11.f<) * 0.5f + 0.4f + 0.1f * cos(x*29.f)); }
 
 /** get a color from a number of vectors */
 QColor ColorScale::get_spectral(const float * f, size_t num, float amp) const
