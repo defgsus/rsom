@@ -38,16 +38,17 @@ HelpWindow::HelpWindow(const ProjectView & view, QWidget *parent) :
 void HelpWindow::load_()
 {
     // --- license ---
-
-    QFile file(":/rsom/LICENSE");
-    if (!file.open(QFile::ReadOnly | QFile::Text))
     {
-        SOM_ERROR("Can't open help resource");
-        return;
-    }
+        QFile file(":/rsom/LICENSE");
+        if (!file.open(QFile::ReadOnly | QFile::Text))
+        {
+            SOM_ERROR("Can't open help resource");
+            return;
+        }
 
-    QTextStream in(&file);
-    tlicense_->setPlainText(in.readAll());
+        QTextStream in(&file);
+        tlicense_->setPlainText(in.readAll());
+    }
 
     // --- about ---
 
@@ -65,12 +66,26 @@ void HelpWindow::load_()
     // --- documentation ---
 
     QString s;
+    {
+        QFile file(":/rsom/help.html");
+        if (!file.open(QFile::ReadOnly | QFile::Text))
+        {
+            SOM_ERROR("Can't open help resource");
+            return;
+        }
+
+        QTextStream in(&file);
+        s = in.readAll() + "\n";
+    }
+
+    // --- parameters ---
+
     QTextStream str(&s);
 
 
     // property help
 
-    str << "<h2>properties</h2>";
+    str << "<a name=\"properties\"></a><h2>properties</h2>";
 
     // extract each Property::help
     for (auto i=props_.property.begin(); i!=props_.property.end(); ++i)

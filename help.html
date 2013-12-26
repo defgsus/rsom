@@ -1,0 +1,47 @@
+<h1>Welcome to r-som</h1>
+<p>r-som (spell <i>awesome</i>) is a tool for generating <i>Self-Organizing Maps</i>
+from the spectral data of audio samples, which can be exported to <i>Native Instruments' Reaktor</i></p>
+
+<p>table of contents</p>
+<ul>
+    <li><a href="#intro">introduction</a></li>
+    <li><a href="#use">usage of program</a></li>
+    <li><a href="#properties">detailed description of each property</a></li>
+</ul>
+
+<a name="intro"></a>
+<h2>introduction</h2>
+
+<p><i>Self-Organizing Maps</i> (som) or <i>Kohonen Networks</i> help to arange multi-dimensional data
+on a low-dimensional surface to visualize the differences and similliarities between single data points.
+Please check other sources for a detailed description of <i>som</i>s.</p>
+
+<p>In this program, an audio file is split into small pieces, called <i>grains</i>, and the frequency
+components of each grain are analyzed by a <i>discrete Fourier transform</i>. These <i>grains</i>, or
+better their spectral data, is inserted into the <i>som</i>, one by one, iteratively. After some time,
+each <i>grain</i> has a certain position in the map, where similiar <i>grains</i> are located near
+each other. Similiar means, the frequency spectra of the grains are similiar.</p>
+
+<p>For example, you can take a recording of someone speaking, generate the <i>som</i> and after training,
+there will be clusters in the map for each vowel, 's' sound, fricative and whatever was in the recording.
+This map can be exported to <i>NI Reaktor</i>'s table format to build awesome ensembles. E.g. you can build
+a <i>grain synthesizer</i> where the 'sound color' can be selected by a x/y controller that scrolls through
+the map. Since all <i>grains</i> are assorted for similiarity, you can have seamless transitions from one
+vowel to the next by moving the x/y position, given the original recording contains such transitions.</p>
+
+<p>However, there may be big differences in the spectra of the <i>grains</i> for some neighbouring
+cells. You can imagine the <i>som</i>-training with spectral data as breaking down the high-
+dimensional spectral data (say e.g. 32 bands or 32 dimensions) to two dimensions, x and y. Each
+grain of the input sample is placed at a x,y-location so that it is close to similiar grains. Obviously,
+clusters of different spectra still have to share the limited 2D space so they might end up close to each
+other, although they are different. This might not be a problem for the things you want to do with the map.
+It's just a basic property of kohonen networks.</p>
+
+
+
+<p>That's the theory, however. To get such accurate results, in most cases some tweaking of the <i>som</i>
+parameters is nescessary.</p>
+
+
+<a name="use"></a>
+<h2>usage</h2>

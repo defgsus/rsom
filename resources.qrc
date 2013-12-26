@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/rsom">
         <file>LICENSE</file>
+        <file>help.html</file>
     </qresource>
 </RCC>
