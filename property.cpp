@@ -313,7 +313,7 @@ QWidget * Property::getWidget_(QWidget * parent, QLayout * l0, size_t i)
                     list->setCurrentRow(k);
             }
             /// @todo nicer list height deduction
-            //list->setFixedHeight(60);
+            list->setFixedHeight(100);
             list->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 
             // get change event
@@ -375,6 +375,8 @@ void Property::updateWidget(bool do_callback)
 
         switch (type)
         {
+            case UNKNOWN: break;
+
             case BOOL:
                 static_cast<QCheckBox*>(widgets_[i])->setChecked(v_bool[i]);
             break;

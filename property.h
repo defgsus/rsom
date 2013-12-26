@@ -39,7 +39,7 @@ public:
         INT,
         FLOAT,
         SELECT,
-        STRING,
+//        STRING,
         UNKNOWN
     };
 
@@ -51,7 +51,7 @@ public:
         H_WIDGET_LABEL
     };
 
-    static const int     numTypes = STRING;
+    static const int     numTypes = UNKNOWN-1;
     static const char *  typeName[];
     static       int     name2int(const QString& n);
 

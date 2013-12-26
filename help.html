@@ -24,24 +24,54 @@ each other. Similiar means, the frequency spectra of the grains are similiar.</p
 
 <p>For example, you can take a recording of someone speaking, generate the <i>som</i> and after training,
 there will be clusters in the map for each vowel, 's' sound, fricative and whatever was in the recording.
-This map can be exported to <i>NI Reaktor</i>'s table format to build awesome ensembles. E.g. you can build
+That's the theory, however. To get such accurate results, in most cases some tweaking of the <i>som</i>
+parameters is nescessary. See <a href="#use">usage</a> and <a href="#properties">parameters</a> for details.</p>
+
+<p>The generated map can be exported to <i>NI Reaktor</i>'s table format to build awesome ensembles. E.g. you can build
 a <i>grain synthesizer</i> where the 'sound color' can be selected by a x/y controller that scrolls through
 the map. Since all <i>grains</i> are assorted for similiarity, you can have seamless transitions from one
 vowel to the next by moving the x/y position, given the original recording contains such transitions.</p>
 
-<p>However, there may be big differences in the spectra of the <i>grains</i> for some neighbouring
+<p>However, there may be big differences or jumps in the spectra of the <i>grains</i> for some neighbouring
 cells. You can imagine the <i>som</i>-training with spectral data as breaking down the high-
-dimensional spectral data (say e.g. 32 bands or 32 dimensions) to two dimensions, x and y. Each
+dimensional spectral data (say e.g. 32 bands or 32 dimensions) down to two dimensions, x and y. Each
 grain of the input sample is placed at a x,y-location so that it is close to similiar grains. Obviously,
 clusters of different spectra still have to share the limited 2D space so they might end up close to each
 other, although they are different. This might not be a problem for the things you want to do with the map.
-It's just a basic property of kohonen networks.</p>
-
-
-
-<p>That's the theory, however. To get such accurate results, in most cases some tweaking of the <i>som</i>
-parameters is nescessary.</p>
+Anyway, it's a basic property of kohonen networks and of dimensionality reduction in general.</p>
 
 
 <a name="use"></a>
 <h2>usage</h2>
+
+<p>When <i>r-som</i> is started, it waits for an audio-file to be loaded. A lot of formats are supported.
+Please check <b>http://mega-nerd.com/libsndfile</b> for a comprehensive
+list. Once a sound file is loaded, the spectral analyzer jumps in to collect the nescessary data. When the
+spectrum is calculated, the <i>som</i> training starts automatically.</p>
+
+<p>Training a <i>som</i> means to insert data (spectra of the <i>grains</i>) repeatedly. On every iteration,
+a random <i>grain</i> is choosen and the map is searched for the cell that best matches the selected <i>grain</i>.
+Then this cell and it's neighbourhood is adjusted towards the grain data. This is much like a paintbrush with
+blurred edges in a drawing software, only with more dimensions than red, green and blue. After <i>many</i> iterations,
+the map will be of the form described above, where clusters of similiar data have formed. In this program,
+one insert (match &amp; draw) operations is called a <i>generation</i>. Inserting as much <i>grains</i> as there
+are in the analyzed audio file is called an <i>epoch</i>. Typically at least <b>100 epochs</b> are needed to
+create a good map. Or in other words: <b>100 x number_of_grains</b> <i>generations</i>.</p>
+
+<p>At any time you can adjust the parameters for spectral analysis and <i>som</i> training. Changing the
+wave/spectrum properties will restart the analysis and the training. Changing the <i>som</i> properties
+restarts only the training. There are also some realtime properties like <a href="#som_alpha">alpha</a> or
+<a href="#som_radius">radius</a> that do not restart the <i>som</i> but affect the training immidiately.</p>
+
+<p><b>Typing a value or clicking the up/down arrows will ireversably restart the analysis or <i>som</i> training,
+and previous data will be lost.</b></p>
+
+<p>The <i>wave view</i> will show you the loaded audio file along with it's spectrum. The <i>som view</i> shows
+individual aspects of the <i>som</i> as described in <a href="#somd_mode">draw mode</a>. Both views are updated
+regularily while background processes calculate the data. So you always get an impression how your data is doing.</p>
+
+<p><b>The user interface should never block unless you specify values that need a lot of memory or r-som is
+running on a single core machine.</b> The latter should work pretty badly.</p>
+
+<p>Once satisfied with the result of the training, stop it and export the map.</p>
+

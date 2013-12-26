@@ -313,7 +313,9 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
     auto l0 = new QVBoxLayout(this);
 
         // -- project file --
-
+/** @todo Projects can basically be stored/restored to/from disk by
+    means of the Property class. */
+/*
         auto l1 = new QHBoxLayout(0);
         l0->addLayout(l1);
 
@@ -338,19 +340,19 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             });
 
             l1->addStretch(2);
+*/
+        // -- wave file --
 
-        // -- project file --
-
-        l1 = new QHBoxLayout(0);
+        auto l1 = new QHBoxLayout(0);
         l0->addLayout(l1);
 
             // load button
-            b = new QPushButton(this);
+            auto b = new QPushButton(this);
             l1->addWidget(b);
             b->setText("load audio");
 
             // label
-            lab = new QLabel(this);
+            auto lab = new QLabel(this);
             l1->addWidget(lab);
             lab->setText(QString::fromStdString(project_->wavename()));
 

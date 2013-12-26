@@ -43,7 +43,6 @@ HelpWindow::HelpWindow(const ProjectView & view, QWidget *parent) :
 
             tabout_ = new QTextBrowser();
             tab_->addTab(tabout_, "about");
-            tab_->setCurrentIndex(2);
 
     load_();
 }
@@ -95,9 +94,6 @@ void HelpWindow::load_()
     // --- parameters ---
 
     QTextStream str(&s);
-
-
-    // property help
 
     str << "<a name=\"properties\"></a><h2>properties</h2>";
 

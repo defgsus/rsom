@@ -43,7 +43,7 @@ QColor ColorScale::get(const float f) const
     return color_map[i];
 }
 
-float sinc(float x) { return (cosf(x*x*11.f<) * 0.5f + 0.4f + 0.1f * cos(x*29.f)); }
+float sinc(float x) { return (cosf(x*x*11.f) * 0.5f + 0.4f + 0.1f * cosf(x*29.f)); }
 
 /** get a color from a number of vectors */
 QColor ColorScale::get_spectral(const float * f, size_t num, float amp) const
