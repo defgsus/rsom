@@ -618,7 +618,7 @@ void ProjectView::set_wave_()
     if (tograin)
     {
         const size_t soms = std::max(1, som_size_->v_int[0] * som_size_->v_int[1]);
-        size_t grains = std::max(1ul, project_->wave().info.frames / soms );
+        size_t grains = std::max((sf_count_t)1, project_->wave().info.frames / soms );
         wave_grain_size_->v_int[0] = grains;
         wave_grain_size_->updateWidget(false);
     }

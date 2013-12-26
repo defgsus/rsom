@@ -9,11 +9,15 @@ TARGET = rsom
 # -- flags --
 
 QMAKE_CXXFLAGS += -std=c++0x
-CONFIG(Release) { QMAKE_CXXFLAGS += -DNDEBUG }
+#TODO: how to make NDEBUG dependend on the build?
+#CONFIG(release) {
+QMAKE_CXXFLAGS += -DNDEBUG
+#}
 
 # -- libs --
 
-LIBS += -lsndfile
+CONFIG
+LIBS += -lsndfile-1
 
 # -- qt stuff --
 

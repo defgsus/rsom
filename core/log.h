@@ -25,10 +25,13 @@
 #include <iostream>
 #include <thread>
 
-#define SOM_DEBUG(stream_arg__) \
-    { std::cerr << std::hex << std::this_thread::get_id() << ": " \
-                << stream_arg__ << "\n"; }
-
+#ifndef NDEBUG
+#   define SOM_DEBUG(stream_arg__) \
+        { std::cerr << std::hex << std::this_thread::get_id() << ": " \
+                    << stream_arg__ << "\n"; }
+#else
+#   define SOM_DEBUG(unused__) { }
+#endif
 
 
 /** SOM_DEBUGN(level, arg) - noisy debug with level */
@@ -47,6 +50,9 @@
 
 #define SOM_LOG(stream_arg__) \
     SOM_DEBUG("log: " << stream_arg__)
+
+
+
 
 /*
 #define SOM_LOG(stream_arg__) \

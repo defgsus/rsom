@@ -130,11 +130,15 @@ void Project::set_som(size_t sizex, size_t sizey, int rand_seed)
     som_sizey_ = sizey;
     som_seed_ = rand_seed;
 
+    // avoid unnescessary som preparation
+    if (!wave_->ok()) return;
+
     // ---- initialize som ------
 
     SOM_DEBUG("Project::work_loop_:: som init");
 
     som_->create(som_sizex_, som_sizey_, num_bands(), som_seed_);
+
     som_->insertWave(*wave_);
     som_->initMap();
 

@@ -102,6 +102,11 @@ void Wave::set(size_t nr_bands, float min_freq, float max_freq, size_t grain_siz
     this->max_freq = max_freq;
     this->grain_size = grain_size;
     this->window_width = window_width;
+    if (!ok_)
+    {
+        nr_grains = 0;
+        return;
+    }
     nr_grains = info.frames / grain_size;
 
     // get memory
