@@ -30,6 +30,24 @@
 class QLayout;
 
 
+/** A multi-type property.
+
+    This class holds one property or many properties of the same type,
+    a persistent property id and a user-friendly name.
+
+    It can create QWidget classes to expose properties in the GUI.
+
+    @todo
+    It is planned to handle XML import/export, which would allow
+    for whole projects to be saved and restored.
+
+    This is the Qt version of Property. It would be desirable
+    to have a non-Qt version in core/ and handle project properties
+    there. Right now, the core/ code can not be executed trivially
+    because ProjectView handles the properties right now.
+    However XML i/o would require QT or another library.
+*/
+
 class Property
 {
 public:
@@ -40,6 +58,7 @@ public:
         FLOAT,
         SELECT,
 //        STRING,
+        /** must be LAST (for numTypes below) */
         UNKNOWN
     };
 
