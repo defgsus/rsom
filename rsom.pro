@@ -58,4 +58,5 @@ RESOURCES += \
     resources.qrc
 
 OTHER_FILES += \
-    help.html
+    help.html \
+    README

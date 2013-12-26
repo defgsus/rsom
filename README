@@ -1,0 +1,18 @@
+r-som (spell 'awesome)
+
+A Self-Organizing Map for spectral data to create NI Reaktor tables
+
+copyright 2013 stefan.berke@modular-audio-graphics.com
+
+Any comments, bug-reports and especially pointers to stuff you
+made with or out of this program will be much appreciated :)
+
+
+This software is free as in freedom; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 3.0
+of the License, or (at your option) any later version.
+
+See LICENSE file for details
+
+
