@@ -79,4 +79,14 @@ running on a single core machine.</b> The latter should work pretty badly.</p>
 <p>Once satisfied with the result of the training, stop it and export the map.</p>
 
 <a name="export"></a>
-<h2>export</h2>
+<h2>exporting</h2>
+
+<p>Press the <i>export</i> button (left of the <i>som</i> view) to open a save dialog. The .ntf table that will be
+exported is two-dimensional with one float value per cell. The <a href="#somd_mode">draw mode</a> also selects the
+kind of data that is exported. So whatever is currently shown in the view will be exported. If you switch from, e.g.,
+<i>single band</i> to <i>neigbour distance</i> while the training is not running, you probably need to start training
+for a blink, so the neighbour distance map gets calculated.</p>
+
+<p>The most meaningful data to export is the <i>grain index</i>. Each cell of the table will contain a number
+representing the start of the grain in the audio sample (in seconds). You can export the <i>neighbour distance</i>
+or <i>single band</i> data as well, if you need that information in you Reaktor ensemble.</p>
