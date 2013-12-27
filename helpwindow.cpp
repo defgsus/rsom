@@ -70,7 +70,7 @@ void HelpWindow::load_()
                        "<p>r-som generates <i>Self-Organizing Maps</i> from audio files and "
                        "exports them to the <i>NI Reaktor</i> table format.</p>"
                        "<p>This is free software. Free as in freedom. See the license for details.</p>"
-                       "<pre>build %1 %2</pre>"
+                       "<pre>version 0.1 build %1 %2</pre>"
                        "<p>authors:</p>"
                        "<pre>stefan.berke@modular-audio-graphics.com, 2013</pre>"
                        ).arg(__DATE__).arg(__TIME__)
