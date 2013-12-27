@@ -8,7 +8,7 @@ TARGET = rsom
 
 # -- flags --
 
-QMAKE_CXXFLAGS += -std=c++0x
+QMAKE_CXXFLAGS += -std=c++0x -O2
 #TODO: how to make NDEBUG dependend on the build?
 #CONFIG(release) {
 QMAKE_CXXFLAGS += -DNDEBUG
@@ -16,7 +16,7 @@ QMAKE_CXXFLAGS += -DNDEBUG
 
 # -- libs --
 
-CONFIG
+#TODO: how to setup for different OSes?
 LIBS += -lsndfile-1
 
 # -- qt stuff --
@@ -41,7 +41,8 @@ SOURCES += main.cpp \
     property.cpp \
     colorscale.cpp \
     helpwindow.cpp \
-    properties.cpp
+    properties.cpp \
+    core/log.cpp
 
 HEADERS += \
     mainwindow.h \

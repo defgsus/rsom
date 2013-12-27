@@ -16,10 +16,12 @@
 
 #include "core/log.h"
 #include "core/project.h"
+#include "core/write_ntf.h"
 #include "property.h"
 #include "properties.h"
 #include "waveview.h"
 #include "somview.h"
+#include "helpwindow.h"
 
 #include <QLayout>
 #include <QCheckBox>
@@ -28,6 +30,8 @@
 #include <QFrame>
 #include <QLabel>
 #include <QFileDialog>
+#include <QTextBrowser>
+#include <QKeyEvent>
 
 enum SomDrawMode
 {
@@ -41,6 +45,8 @@ enum SomDrawMode
 ProjectView::ProjectView(Project * p, QWidget *parent) :
     QFrame(parent),
     project_    (p),
+    wave_dir_   ("."),
+    export_dir_ ("."),
     props_      (new Properties)
 {
     // some signals for threadsafety
@@ -48,14 +54,24 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
     connect(this, SIGNAL(start_som_signal()), this, SLOT(start_som()) );
     connect(this, SIGNAL(som_update_signal()), this, SLOT(som_update()) );
     connect(this, SIGNAL(start_training_signal()), this, SLOT(startTraining()) );
+    connect(this, SIGNAL(log_signal(const QString&)), this, SLOT(log(const QString&)) );
+    connect(this, SIGNAL(error_signal(const QString&)), this, SLOT(error(const QString&)) );
 
     // --- properties ---
 
     SOM_DEBUG("ProjectView::ProjectView:: creating properties");
 
+    // little helper macro
+    // we collect all properties also in props_ to have them uniformly accessible
+    // (e.g. for disk i/o which needs to be done some day)
     #define SOM_NEW_PROPERTY(var__, id__, name__) \
         var__ = new Property(id__, name__); \
         props_->add(var__);
+
+    // note that the values used to initialize the properties
+    // need to match the settings in the classes (Project, Som, Wave)
+    // Not all properties are checked on start of program but
+    // only when user-events force new settings.
 
     SOM_NEW_PROPERTY(wave_bands_, "wave_bands", "number bands");
     wave_bands_->init(1, 100000, project_->num_bands());
@@ -214,19 +230,20 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             "<p>Note that this value has particularily more significance "
             "when <b>ignore vacant cells</b> is activated.</p>";
 
-    SOM_NEW_PROPERTY(som_non_dupl_, "som_no_duplicates", "ignore vacant cells");
-    som_non_dupl_->init(false);
+    SOM_NEW_PROPERTY(som_non_dupl_, "som_no_duplicates", "one grain per cell");
+    som_non_dupl_->init(true);
     som_non_dupl_->help =
-            "<b>ignore vacant cells for data matching</b>"
+            "<b>only assign one grain per cell</b>"
             "<p>When a data sample (grain) is inserted into the map, "
-            "the best matching position is searched before. But it is not "
+            "the best matching position is searched for it. But it is not "
             "likely that every cell in the map is a unique best-match "
-            "for each data sample. More often, do several data samples "
-            "best match with the same cell in the map, while other cells "
-            "aren't matched by any sample.</p>"
+            "for each data sample. More often a cell will match more "
+            "than one data sample, while other cells aren't matched by any sample at all.</p>"
             "<p>To completely fill the map (given the cell/grains ratio is 1) "
-            "use this mode. A cell is only considered as a match for a data "
-            "sample when no other data sample was inserted before.</p>";
+            "use this mode, which is also the default for exporting Reaktor maps. "
+            "A cell is only considered as a match for a data "
+            "sample when no other data sample was inserted before. "
+            "(When samples move to another cell they clear the previous cell.)</p>";
 
     SOM_NEW_PROPERTY(som_wrap_, "som_wrap_edge", "wrap on edges");
     som_wrap_->init(true);
@@ -440,13 +457,40 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
                 somd_dmode_->    createWidget(this, l2, lt);
                 somd_band_nr_->  createWidget(this, l2, lt);
                 somd_mult_->     createWidget(this, l2, lt);
-                somd_calc_imap_->createWidget(this, l2, lt);
+                /// @todo calc imap not working yet
+                //somd_calc_imap_->createWidget(this, l2, lt);
 
+                l2->addSpacing(10);
+
+                // --- export button ---
+                auto but = new QPushButton("Export selected data\nto Reaktor Table", this);
+                l2->addWidget(but);
+                connect(but, &QPushButton::pressed, [this]()
+                {
+                    // stop som if running
+                    if (som_run_->v_bool[0])
+                    {
+                        som_run_->v_bool[0] = false;
+                        som_run_->updateWidget(false);
+                        stopTraining();
+                    }
+                    exportTable();
+                });
+
+                // -- info label --
                 l2->addSpacing(10);
                 sominfo_ = new QLabel(this);
                 l2->addWidget(sominfo_);
 
-                l2->addStretch(2);
+                // -- error/log space --
+                l2->addSpacing(10);
+                log_box_ = new QTextBrowser(this);
+                l2->addWidget(log_box_);
+                QPalette pal(log_box_->palette());
+                pal.setColor(QPalette::Base, QColor(70,70,70));
+                log_box_->setPalette(pal);
+
+                //l2->addStretch(2);
             }
 
             l1->addSpacing(20);
@@ -543,12 +587,43 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             som_update_signal();
         } );
 
+        // connect to SOM_ERROR macro
+        SomLog::error_func = [this](const std::string& text) { error_signal(QString::fromStdString(text)); };
+        // connect to SOM_LOG macro
+        SomLog::log_func = [this](const std::string& text) { log_signal(QString::fromStdString(text)); };
+
+
     checkWidgets_();
 }
 
 ProjectView::~ProjectView()
 {
     delete props_;
+}
+
+void ProjectView::log(const QString& text)
+{
+    QString t(text);
+    t.replace("\n", "<br/>");
+    log_box_->append("<font color=\"#8f8\">" + t + "</font>");
+}
+
+void ProjectView::error(const QString& text)
+{
+    QString t(text);
+    t.replace("\n", "<br/>");
+    log_box_->append("<font color=\"#f88\">" + t + "</font>");
+}
+
+void ProjectView::keyPressEvent(QKeyEvent * event)
+{
+    if (event->key() == Qt::Key_F1)
+    {
+        HelpWindow * win = new HelpWindow(*this, 0);
+        win->show();
+    }
+    else
+    QWidget::keyPressEvent(event);
 }
 
 void ProjectView::checkWidgets_()
@@ -583,12 +658,20 @@ bool ProjectView::loadWave(/*const std::string& fn*/)
     #else
         QFileDialog::getOpenFileName(this,
             "Open Sound",
+#ifdef NDEBUG
+            wave_dir_,
+#else
             "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT",
+#endif
             "Sound Files (*.wav *.riff *.voc);;All (*)"
             );
     #endif
 
     if (fn.isNull()) return false;
+
+    // store this directory
+    QDir dir(fn);
+    wave_dir_ = dir.absolutePath();
 
     // disconnect views
     waveview_->setWave(0);
@@ -600,6 +683,87 @@ bool ProjectView::loadWave(/*const std::string& fn*/)
 
     return true;
 }
+
+bool ProjectView::exportTable()
+{
+    // select dialog window caption
+    QString dialog_name;
+    switch (somd_dmode_->v_int[0])
+    {
+        case SDM_SINGLE_BAND: dialog_name = "Single Band data"; break;
+        case SDM_UMAP: dialog_name = "Neighbour Difference data"; break;
+        case SDM_IMAP: dialog_name = "Seconds-Into-Audio data"; break;
+        case SDM_MULTI_BAND:
+            SOM_ERROR("Multi-Band can not be exported");
+            return false;
+        default:
+            SOM_ERROR("Unsuported export mode");
+            return false;
+    }
+
+    // get filename
+    QString fn =
+            QFileDialog::getSaveFileName(this,
+                "Export " + dialog_name + " to Reaktor Table",
+                export_dir_,
+                "*.ntf"
+                );
+
+    if (fn.isNull()) return false;
+
+    // store directory
+    QDir dir(fn);
+    export_dir_ = dir.absolutePath();
+
+    // generate the data to export
+
+    const size_t
+            sizex = project_->som().sizex,
+            sizey = project_->som().sizey,
+            size = sizex * sizey;
+    std::vector<float> data(size);
+
+    float min_val = 0.f, max_val = 1.f;
+
+    switch (somd_dmode_->v_int[0])
+    {
+        case SDM_SINGLE_BAND:
+            for (size_t i=0; i<size; ++i)
+                data[i] = project_->som().map[i][somd_band_nr_->v_int[0]];
+            break;
+        case SDM_UMAP:
+            for (size_t i=0; i<size; ++i)
+                data[i] = project_->som().umap[i];
+            break;
+        case SDM_IMAP:
+            // convert data indices to seconds-into-wave
+            max_val = project_->wave().length_in_secs;
+            for (size_t i=0; i<size; ++i)
+            {
+                int idx = project_->som().imap[i];
+                if (idx>=0)
+                    data[i] = (float)idx / project_->som().data.size() * max_val;
+                else
+                    /// @todo non-indexed cells should take a user-defined value on export
+                    data[i] = 0.f;
+            }
+            break;
+    }
+
+    if (! save_ntf(fn.toStdString(),
+             min_val, max_val,
+             sizex, sizey,
+             &data[0] ))
+    {
+        SOM_ERROR("error writing table '" << fn.toStdString() << "'");
+        return false;
+    }
+
+    SOM_LOG("exported " << dialog_name.toStdString() << " to " << fn.toStdString());
+
+    return true;
+}
+
 
 void ProjectView::set_wave_()
 {

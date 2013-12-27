@@ -32,6 +32,7 @@ class WaveView;
 class SomView;
 
 class QLabel;
+class QTextBrowser;
 
 class ProjectView : public QFrame
 {
@@ -42,6 +43,7 @@ public:
     virtual ~ProjectView();
 
     bool loadWave();
+    bool exportTable();
 
     const Properties & properties() const { return *props_; }
 
@@ -49,15 +51,22 @@ signals:
     void start_som_signal();
     void som_update_signal();
     void start_training_signal();
+    void log_signal(const QString& text);
+    void error_signal(const QString& text);
 
 public slots:
     void start_som() { set_som_(); }
     void som_update();
 
+    void log(const QString& text);
+    void error(const QString& text);
+
     void startTraining();
     void stopTraining();
 
 protected:
+    virtual void keyPressEvent(QKeyEvent *);
+
     /** check sanity of Property widgets. */
     void checkWidgets_();
 
@@ -76,6 +85,9 @@ protected:
     WaveView * waveview_;
     SomView * somview_;
     QLabel * sominfo_;
+    QTextBrowser * log_box_;
+
+    QString wave_dir_, export_dir_;
 
     // properties
     Properties * props_;

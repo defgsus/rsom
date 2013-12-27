@@ -36,7 +36,7 @@ Som::Som()
         generation          (0),
 
         do_wrap             (true),
-        do_non_duplicate    (false),
+        do_non_duplicate    (true),
         do_index_all        (false)
 {
     SOM_DEBUG("Som::Som()");
@@ -65,6 +65,7 @@ void Som::create(int sizex, int sizey, int dim, int rand_seed)
     this->size = sizex * sizey;
     this->size_diag = sqrt(sizex*sizex + sizey*sizey);
     this->dim = dim;
+    this->rand_seed = rand_seed;
 
     // setup data
     map.resize(size);

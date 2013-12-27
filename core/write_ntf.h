@@ -13,21 +13,24 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 */
 /** @file
-    @brief Native Table Format writer for use with reaktor_som
+    @brief Native Table Format writer (for use with reaktor_som)
 
     @version 2012/07/11 started
+    @version 2012/12/26 untied from som.h
 
     copyright 2013 stefan.berke @ modular-audio-graphics.com
 */
 #ifndef WRITE_NTF_H_INCLUDED
 #define WRITE_NTF_H_INCLUDED
 
-#include "som.h"
+#include <string>
 
-// store the som data as 'native table format'
-// actually, only the 'umap' data is saved which at this point
-// should contain the grain-positions for each som-node
-bool save_ntf(const std::string& filename, const Som& som);
+/** Stores the data as 'native table format'.
+    min_value & max_value are used by Reaktor for displaying.
+    data[] is expected as row-major [y*sizex+x]. */
+bool save_ntf(const std::string& filename,
+              float min_value, float max_value,
+              int sizex, int sizey, const float * data);
 
 
 #endif // WRITE_NTF_H_INCLUDED

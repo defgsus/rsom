@@ -23,12 +23,28 @@
 #define LOG_H
 
 #include <iostream>
+#include <sstream>
 #include <thread>
+#include <functional>
+
+/** this class contains static functors which can be
+    used to retrieve the log/error messages. */
+class SomLog
+{
+public:
+
+    static std::function<void(const std::string&)> error_func;
+    static std::function<void(const std::string&)> log_func;
+};
+
+/** macro for printing a std::ostream compatible stream to console */
+#define SOM_PRINT(stream__, stream_arg__) \
+{ stream__ << std::hex << std::this_thread::get_id() << ": " \
+           << stream_arg__ << "\n"; }
 
 #ifndef NDEBUG
 #   define SOM_DEBUG(stream_arg__) \
-        { std::cerr << std::hex << std::this_thread::get_id() << ": " \
-                    << stream_arg__ << "\n"; }
+        SOM_PRINT(std::cerr, stream_arg__)
 #else
 #   define SOM_DEBUG(unused__) { }
 #endif
@@ -46,10 +62,20 @@
 
 
 #define SOM_ERROR(stream_arg__) \
-    SOM_DEBUG("*error* " << stream_arg__)
+{ \
+    std::stringstream stream__; \
+    stream__ << stream_arg__; \
+    SOM_PRINT(std::cerr, "*error* " << stream__.str()); \
+    if (SomLog::error_func) SomLog::error_func(stream__.str()); \
+}
 
 #define SOM_LOG(stream_arg__) \
-    SOM_DEBUG("log: " << stream_arg__)
+{ \
+    std::stringstream stream__; \
+    stream__ << stream_arg__; \
+    SOM_PRINT(std::cerr, "log: " << stream__.str()); \
+    if (SomLog::log_func) SomLog::log_func(stream__.str()); \
+}
 
 
 

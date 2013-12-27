@@ -30,7 +30,9 @@ inline void sint(const int32_t val)
 }
 
 
-bool save_ntf(const std::string& filename, const Som& som)
+bool save_ntf(const std::string& filename,
+              float min_value, float max_value,
+              int sizex, int sizey, const float * data)
 {
     fileh = fopen(filename.c_str(), "wb");
     if (!fileh) return false;
@@ -40,11 +42,11 @@ bool save_ntf(const std::string& filename, const Som& som)
 	sint(0);    // Reaktor 3.0 = 0
     sint(1);    // Undefined = 0, Float32Bits = 1
 
-    sint(som.size);            // X size (horizontal)
-    sint(som.size);            // Y size (vertical)
+    sint(sizex);            // X size (horizontal)
+    sint(sizey);            // Y size (vertical)
 
-	sfloat(0.0f);                       // Min - Value Properties
-	sfloat(som.wave->length_in_secs);   // Max - Value Properties
+    sfloat(min_value);                  // Min - Value Properties
+    sfloat(max_value);                  // Max - Value Properties
 	sfloat(0.01f);                      // Stepsize - Value Properties
     sfloat(0.0f);                       // Default - Value Properties
     sint(0);                            // Display Format - Value Properties
@@ -80,9 +82,8 @@ bool save_ntf(const std::string& filename, const Som& som)
     sfloat(1.f);      // float  Y-CustomRatio
 
     // write the table data
-    for (size_t j=0; j<som.size; ++j)
-        for (size_t i=0; i<som.size; ++i)
-            sfloat(som.umap[j*som.size+i]);
+    for (int i=0; i<sizex*sizey; ++i)
+        sfloat(data[i]);
 
     fclose(fileh);
     return true;

@@ -343,6 +343,7 @@ QWidget * Property::getWidget_(QWidget * parent, QLayout * l0, size_t i)
     // get destroy event
     parent->connect(widget, &QWidget::destroyed, [=](QObject * obj)
     {
+        Q_UNUSED(obj);
         SOM_DEBUGN(0, "Property widget '" << id.toStdString() << "'destroyed " << obj);
         disconnectWidget();
     } );
