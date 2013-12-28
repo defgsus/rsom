@@ -4,28 +4,26 @@
 #
 #-------------------------------------------------
 
-TARGET = rsom
-
-# -- flags --
-
-QMAKE_CXXFLAGS += -std=c++0x -O2
-#TODO: how to make NDEBUG dependend on the build?
-#CONFIG(release) {
-QMAKE_CXXFLAGS += -DNDEBUG
-#}
-
-# -- libs --
-
-#TODO: how to setup for different OSes?
-LIBS += -lsndfile-1
-
 # -- qt stuff --
+
+TARGET    = rsom
 
 QT       += core gui widgets
 
 CONFIG   += console
 
-TEMPLATE = app
+TEMPLATE  = app
+
+# -- flags --
+
+QMAKE_CXXFLAGS += -std=c++0x -O2
+QMAKE_CXXFLAGS_RELEASE += -DNDEBUG
+
+# -- libs --
+
+windows: LIBS += -lsndfile-1
+else:    LIBS += -lsndfile
+
 
 # -- files --
 
