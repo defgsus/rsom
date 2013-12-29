@@ -96,7 +96,9 @@ class Wave
     /** band data [nr_grains][nr_bands] */
     std::vector<std::vector<float>> band;
     /** precalculated sin/cos table (internal use). [nr_bands][window_width] */
-    std::vector<float> table_sin, table_cos;
+    std::vector<float> table_sin, table_cos,
+    /** precalced window function [window_width] */
+        table_window;
 
     /** the libsndfile, this will be invalid after loading. */
     SNDFILE *sfile;

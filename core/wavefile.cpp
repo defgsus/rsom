@@ -111,13 +111,25 @@ void Wave::set(size_t nr_bands, float min_freq, float max_freq, size_t grain_siz
 
     // get memory
 
-    SOM_DEBUG("Wave::set:: resizing array");
+    SOM_DEBUG("Wave::set:: resizing arrays");
 
     band.resize(nr_grains);
     for (size_t i=0; i<nr_grains; ++i)
+    {
         band[i].resize(nr_bands);
+        for (auto j=band[i].begin(); j!=band[i].end(); ++j)
+            *j = 0.f;
+    }
 
+    // window function
+    table_window.resize(window_width);
+    for (size_t i=0; i<window_width; ++i)
+    {
+        const float t = (float)i / window_width;
+        table_window[i] = sinf(t * 3.141592654);
+    }
     // get sin/cos table
+
     table_sin.resize(window_width * nr_bands);
     table_cos.resize(window_width * nr_bands);
     auto psin = table_sin.begin(),
@@ -155,7 +167,7 @@ float Wave::get_bands(size_t xstart_, size_t xlen_, float amp)
         return ma;
     }
 
-    // get window
+    // get window of samples to process
     size_t xstart = 0, xend = nr_grains;
     if (xstart_ || xlen_)
     {
@@ -168,8 +180,10 @@ float Wave::get_bands(size_t xstart_, size_t xlen_, float amp)
 
     /* No, this is not very fast. But accurate and completely user adjustable.
      * E.g. you can choose the window width, number of bands and frequency range
-     * individually. To speed things up in the post 2010 world, use many cores ;)
+     * individually.
      */
+
+    const int half_window = window_width / 2;
 
     // for each grain
     for (size_t i=xstart; i<xend; ++i)
@@ -189,8 +203,9 @@ float Wave::get_bands(size_t xstart_, size_t xlen_, float amp)
             for (size_t j=0; j<window_width; j++)
             {
 //              const float t = (float)j / info.samplerate;
-                const int   si = i*grain_size + j;
-                const float sam = (si<info.frames)? wave[si] : 0.f;
+                const int   si = (int)(i*grain_size + j) - half_window;
+                const float sam = (si>=0 && si<info.frames)?
+                                wave[si] * table_window[j] : 0.f;
 
                 sa += *psin++ * sam;
                 ca += *pcos++ * sam;
