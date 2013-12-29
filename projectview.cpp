@@ -463,7 +463,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
                 l2->addSpacing(10);
 
                 // --- export button ---
-                auto but = new QPushButton("Export selected data\nto Reaktor Table", this);
+                auto but = new QPushButton("Export selected data to Reaktor Table", this);
                 l2->addWidget(but);
                 connect(but, &QPushButton::pressed, [this]()
                 {
