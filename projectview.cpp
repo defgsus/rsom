@@ -651,7 +651,7 @@ void ProjectView::checkWidgets_()
 bool ProjectView::loadWave(/*const std::string& fn*/)
 {
     QString fn =
-    #if (0)
+    #if (1)
             // "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/rausch/radioscan_05_4.5.wav"
             // "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/gong/metalfx01.wav"
              "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/ldmvoice/danaykroyd.wav";

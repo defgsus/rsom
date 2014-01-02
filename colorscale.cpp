@@ -43,7 +43,7 @@ QColor ColorScale::get(const float f) const
     return color_map[i];
 }
 
-float sinc(float x) { return (cosf(x*x*11.f) * 0.5f + 0.4f + 0.1f * cosf(x*29.f)); }
+float specf(float t, float v) { return v * 2.5f * (cosf(t*t*19.f) * 0.5f + 0.3f + 0.2f * cosf(v*29.f)); }
 
 /** get a color from a number of vectors */
 QColor ColorScale::get_spectral(const float * f, size_t num, float amp) const
@@ -56,15 +56,15 @@ QColor ColorScale::get_spectral(const float * f, size_t num, float amp) const
         const float
             t = (float)k/(num-1),
             v = f[k];
-        r += v * sinc(1.f - t);
-        g += v * sinc(std::max(0.f, fabsf(0.5f - t)));
-        b += v * sinc(t);
+        r += specf(1.f - t, v);
+        g += specf(std::max(0.f, fabsf(0.5f - t)), v);
+        b += specf(t, v);
     }
     const float a = 255.f / num * amp;
 
     return QColor(
-           std::min(255, (int)(r * a)),
-           std::min(255, (int)(g * a)),
-           std::min(255, (int)(b * a))
+           std::max(0, std::min(255, (int)(r * a) )),
+           std::max(0, std::min(255, (int)(g * a) )),
+           std::max(0, std::min(255, (int)(b * a) ))
            );
 }
