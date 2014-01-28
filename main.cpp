@@ -12,7 +12,7 @@
     along with this software; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 */
-#if (0)
+#if (1)
 #include <QApplication>
 
 #include "mainwindow.h"
@@ -25,16 +25,34 @@ int main(int argc, char *argv[])
     MainWindow win;
     win.show();
 
+#ifdef NDEBUG
     HelpWindow help(*win.projectView());
     help.show();
+#endif
 
     return a.exec();
 }
 #else
 
-int main(int argc, char * args[])
-{
+#include "iostream"
 
+#include "core/data.h"
+#include "core/som.h"
+#include "core/project.h"
+
+int main(int , char **)
+{
+    Project project;
+
+    project.data().createRandomData(1000, 256);
+    project.set_som(31,31, 1);
+    std::cout << project.som().info_str() << "\n";
+
+    project.startSomThread();
+    while (true)
+    {
+
+    }
 }
 
 #endif

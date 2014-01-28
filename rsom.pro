@@ -33,31 +33,34 @@ SOURCES += main.cpp \
     core/wavefile.cpp \
     core/som.cpp \
     core/log.cpp \
-    core/data.cpp
-#    mainwindow.cpp \
-#    projectview.cpp \
+    core/data.cpp \
+    mainwindow.cpp \
+    projectview.cpp \
 #    waveview.cpp \
-#    somview.cpp \
-#    property.cpp \
-#    colorscale.cpp \
-#    helpwindow.cpp \
-#    properties.cpp \
+    somview.cpp \
+    property.cpp \
+    colorscale.cpp \
+    helpwindow.cpp \
+    properties.cpp \
+    dataview.cpp
 
 HEADERS += \
-#    mainwindow.h \
-#    projectview.h \
+    mainwindow.h \
+    projectview.h \
 #    waveview.h \
-#    somview.h \
-#    colorscale.h \
-#    property.h \
-#    helpwindow.h \
-#    properties.h \
+    somview.h \
+    colorscale.h \
+    property.h \
+    helpwindow.h \
+    properties.h \
     core/som.h \
     core/wavefile.h \
     core/write_ntf.h \
     core/project.h \
     core/log.h \
-    core/data.h
+    core/data.h \
+    core/scandir.h \
+    dataview.h
 
 RESOURCES += \
     resources.qrc

@@ -16,7 +16,9 @@
 
 #include "core/log.h"
 #include "core/project.h"
-#include "core/write_ntf.h"
+//#include "core/write_ntf.h"
+#include "core/data.h"
+
 #include "property.h"
 #include "properties.h"
 #include "waveview.h"
@@ -45,7 +47,7 @@ enum SomDrawMode
 ProjectView::ProjectView(Project * p, QWidget *parent) :
     QFrame(parent),
     project_    (p),
-    wave_dir_   ("."),
+    data_dir_   ("."),
     export_dir_ ("."),
     props_      (new Properties)
 {
@@ -72,7 +74,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
     // need to match the settings in the classes (Project, Som, Wave)
     // Not all properties are checked on start of program but
     // only when user-events force new settings.
-
+/*
     SOM_NEW_PROPERTY(wave_bands_, "wave_bands", "number bands");
     wave_bands_->init(1, 100000, project_->num_bands());
     wave_bands_->help =
@@ -145,7 +147,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             "color that tries to be unique for a unique grain, using the whole "
             "band data as source.</p><p>The latter mode is implemented to compare with "
             "colors from the <i>som</i> display. ";
-
+*/
     // --- som properties
 
     SOM_NEW_PROPERTY(som_run_, "", "TRAINING");
@@ -178,15 +180,6 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             "<p>If you want a tight packing of indices into the map, select a factor close "
             "to 1. To create valeys of undefined indices between clusters, select a value "
             "larger than 1.</p>";
-
-    SOM_NEW_PROPERTY(som_size_to_g_, "som_size_to_grains", "som size\nto num. grains");
-    som_size_to_g_->init(false);
-    som_size_to_g_->help =
-            "<b>determine number of grains from size of <i>som</i></b>"
-            "<p>When selected, the number of grains in the wave data is "
-            "set to the number of cells in the <i>som</i>. This is usefull if "
-            "you want to calculate a map of a certain size and where the number "
-            "of grains should fill the map.</p>";
 
     SOM_NEW_PROPERTY(som_seed_, "som_seed", "random seed");
     som_seed_->init(-(2<<16), 2<<16, project_->som_seed());
@@ -358,7 +351,8 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
 
             l1->addStretch(2);
 */
-        // -- wave file --
+
+        // -- data file --
 
         auto l1 = new QHBoxLayout(0);
         l0->addLayout(l1);
@@ -366,23 +360,23 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             // load button
             auto b = new QPushButton(this);
             l1->addWidget(b);
-            b->setText("load audio");
+            b->setText("load data");
 
             // label
             auto lab = new QLabel(this);
             l1->addWidget(lab);
-            lab->setText(QString::fromStdString(project_->wavename()));
+            lab->setText(QString::fromStdString(project_->data().filepath()));
 
             connect(b, &QPushButton::clicked, [=]()
             {
-                loadWave();
+                loadData();
 
-                lab->setText(QString::fromStdString(project_->wavename()));
+                lab->setText(QString::fromStdString(project_->data().filepath()));
             });
 
             l1->addStretch(2);
 
-
+/*
         // ---- WAVE VIEW ----
 
         waveview_ = new WaveView(this);
@@ -438,7 +432,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
         wave_band_amp_->    cb_value_changed( std::bind(&ProjectView::set_wave_, this) );
         wave_band_exp_->    cb_value_changed( std::bind(&ProjectView::set_wave_, this) );
         wave_band_norm_->   cb_value_changed( [=]() { checkWidgets_(); set_wave_(); } );
-
+*/
 
         // ---- SOM view ----
 
@@ -507,7 +501,6 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
                 som_size_use_f_-> createWidget(this, l2, lt);
                 som_sizef_->      createWidget(this, l2, lt);
                 som_size_->       createWidget(this, l2, lt);
-                som_size_to_g_->  createWidget(this, l2, lt);
                 l2->addSpacing(20);
                 som_seed_->       createWidget(this, l2, lt);
                 l2->addSpacing(10);
@@ -531,8 +524,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
         som_run_->        cb_value_changed( [&]() { if (som_run_->v_bool[0]) startTraining(); else stopTraining(); } );
         som_size_use_f_-> cb_value_changed( [&]() { checkWidgets_(); set_som_(); } );
         som_sizef_->      cb_value_changed( std::bind(&ProjectView::set_som_, this) );
-        som_size_->       cb_value_changed( [&]() { if (som_size_to_g_->v_bool[0]) set_wave_(); else set_som_(); });
-        som_size_to_g_->  cb_value_changed( [&]() { checkWidgets_(); set_wave_(); } );
+        som_size_->       cb_value_changed( [&]() { set_som_(); });
 
         som_seed_->       cb_value_changed( std::bind(&ProjectView::set_som_, this));
         som_alpha_->      cb_value_changed( [&]() { project_->set_som_alpha(som_alpha_->v_float[0]); } );
@@ -545,7 +537,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
 
 
         // ----- Project callbacks -----
-
+/*
         // connect wave update
         project_->cb_wave_loaded( [&]()
         {
@@ -567,7 +559,7 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             // note: do not let the wave thread interfere with gui
             start_som_signal();
         } );
-
+*/
         // when SOM is allocated
         project_->cb_som_ready( [&]()
         {
@@ -629,32 +621,25 @@ void ProjectView::keyPressEvent(QKeyEvent * event)
 void ProjectView::checkWidgets_()
 {
     const bool
-        tograin = som_size_to_g_->v_bool[0],
-        fromgrain = som_size_use_f_->v_bool[0],
-
-        bandnorm = wave_band_norm_->v_bool[0];
+        fromgrain = som_size_use_f_->v_bool[0];
 
     // --- set activity ---
 
-    wave_grain_size_->setActive(  !tograin );
-    wave_band_amp_->setActive(    !bandnorm );
-
-    som_size_use_f_->setActive(   !tograin );
-    som_sizef_->setActive(        fromgrain && !tograin );
-    som_size_->setActive(         !fromgrain || tograin );
+    som_sizef_->setActive(        fromgrain );
+    som_size_->setActive(         !fromgrain );
 
     somd_band_nr_->setActive(     somd_dmode_->v_int[0] == SDM_SINGLE_BAND);
     somd_calc_imap_->setActive(   somd_dmode_->v_int[0] == SDM_IMAP);
 }
 
 
-bool ProjectView::loadWave(/*const std::string& fn*/)
+bool ProjectView::loadData(/*const std::string& fn*/)
 {
     QString fn =
     #if (1)
             // "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/rausch/radioscan_05_4.5.wav"
             // "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/gong/metalfx01.wav"
-             "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/ldmvoice/danaykroyd.wav";
+             "/home/defgsus/prog/starmaps/";
     #else
         QFileDialog::getOpenFileName(this,
             "Open Sound",
@@ -671,21 +656,25 @@ bool ProjectView::loadWave(/*const std::string& fn*/)
 
     // store this directory
     QDir dir(fn);
-    wave_dir_ = dir.absolutePath();
+    data_dir_ = dir.absolutePath();
 
     // disconnect views
-    waveview_->setWave(0);
+    //waveview_->setWave(0);
     somview_->setSom(0);
 
-    if (!project_->load_wave(
+    if (!project_->data().loadAsciiDir(
                 fn.toStdString()
             )) return false;
+
+    if (som_run_->v_bool[0])
+        start_som();
 
     return true;
 }
 
 bool ProjectView::exportTable()
 {
+    /*
     // select dialog window caption
     QString dialog_name;
     switch (somd_dmode_->v_int[0])
@@ -760,44 +749,11 @@ bool ProjectView::exportTable()
     }
 
     SOM_LOG("exported " << dialog_name.toStdString() << " to " << fn.toStdString());
-
+    */
     return true;
 }
 
 
-void ProjectView::set_wave_()
-{
-    SOM_DEBUG("ProjectView::set_wave_()");
-
-    // disconnect views
-    waveview_->setWave(0);
-    // disconnect som view (it will change anyway)
-    somview_->setSom(0);
-
-    const bool
-        norm = wave_band_norm_->v_bool[0],
-        tograin = som_size_to_g_->v_bool[0];
-
-    // set grainsize as function of som size
-    if (tograin)
-    {
-        const size_t soms = std::max(1, som_size_->v_int[0] * som_size_->v_int[1]);
-        size_t grains = std::max((size_t)1, (size_t)project_->wave().info.frames / soms );
-        wave_grain_size_->v_int[0] = grains;
-        wave_grain_size_->updateWidget(false);
-    }
-
-    project_->set(
-            wave_bands_->v_int[0],
-            wave_freq_->v_float[0],
-            wave_freq_->v_float[1],
-            wave_grain_size_->v_int[0],
-            wave_window_->v_int[0],
-            norm? 0.f : wave_band_amp_->v_float[0],
-            wave_band_exp_->v_float[0]
-            );
-
-}
 
 void ProjectView::set_som_()
 {
@@ -806,14 +762,13 @@ void ProjectView::set_som_()
     // disconnect view
     somview_->setSom(0);
 
-    // determine size from nr_grains
+    // determine size from numObjects
     // and change widget values
-    if (som_size_use_f_->v_bool[0]
-    && !som_size_to_g_->v_bool[0])
+    if (som_size_use_f_->v_bool[0])
     {
-        // set size as a function of number of grains
+        // set size as a function of number of objects
         const size_t s = std::max(1.f, ceilf(
-            sqrtf(project_->num_grains() * som_sizef_->v_float[0]) ));
+            sqrtf(project_->data().numObjects() * som_sizef_->v_float[0]) ));
 
         // update size widgets
         som_size_->v_int[0] = som_size_->v_int[1] = s;

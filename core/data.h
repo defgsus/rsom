@@ -39,12 +39,20 @@ public:
     size_t numObjects() const { return data_.size(); }
 
     /** return number of data points in each object. */
-    size_t numDataPoints() const { return data_.size(); }
+    size_t numDataPoints() const { return num_points_; }
 
     /** retrieve a pointer to the indexth object's data.
         This pointer will point to numDataPoints() number of consecutive float values. */
     const Float * getObjectData(size_t index) const
         { if (index>=data_.size()) return 0; return &data_[index][0]; }
+
+    // ----- IO ----
+
+    const std::string& filepath() const { return filepath_; }
+
+    bool addAsciiFile(const std::string& filename);
+
+    bool loadAsciiDir(const std::string& pathname);
 
     // debug
 
@@ -53,6 +61,10 @@ public:
 private:
     /** contains all the data */
     std::vector<std::vector<Float>> data_;
+    /** last used filepath */
+    std::string filepath_;
+    /** number of data points. if 0, then undecided yet. */
+    size_t num_points_;
 };
 
 #endif // DATA_H

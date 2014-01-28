@@ -113,7 +113,7 @@ void Project::set_som(size_t sizex, size_t sizey, int rand_seed)
 
     // ---- initialize som ------
 
-    SOM_DEBUG("Project::work_loop_:: som init");
+    SOM_DEBUG("Project::set_som:: som init");
 
     som_->create(som_sizex_, som_sizey_, data_->numDataPoints(), som_seed_);
 
@@ -223,4 +223,5 @@ void Project::work_loop_()
         //usleep(1000*1);
     }
 
+    SOM_DEBUG("Project::work_loop_:: exit");
 }

@@ -42,7 +42,7 @@ public:
     explicit ProjectView(Project * project, QWidget *parent = 0);
     virtual ~ProjectView();
 
-    bool loadWave();
+    bool loadData();
     bool exportTable();
 
     const Properties & properties() const { return *props_; }
@@ -71,8 +71,6 @@ protected:
     void checkWidgets_();
 
     /** (re-)set the wave parameters using Properties */
-    void set_wave_();
-    /** (re-)set the wave parameters using Properties */
     void set_som_();
 
     /** update the needed maps immidiately */
@@ -87,27 +85,15 @@ protected:
     QLabel * sominfo_;
     QTextBrowser * log_box_;
 
-    QString wave_dir_, export_dir_;
+    QString data_dir_, export_dir_;
 
     // properties
     Properties * props_;
     Property
-        *wave_bands_,
-        *wave_freq_,
-        *wave_grain_size_,
-        *wave_window_,
-        *wave_band_norm_,
-        *wave_band_amp_,
-        *wave_band_exp_,
-
-        *waved_waveform_,
-        *waved_spec_colors_,
-
         *som_run_,
         *som_size_,
         *som_size_use_f_,
         *som_sizef_,
-        *som_size_to_g_,
         *som_seed_,
         *som_alpha_,
         *som_radius_,

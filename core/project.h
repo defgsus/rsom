@@ -36,8 +36,6 @@ class Data;
     and runs the analysis and training in separate threads.
 
     To work with this class, you need to respond to some callbacks.
-    cb_bands_finished() is the callback from where you can start
-    training with set_som().
 */
 class Project
 {
@@ -117,13 +115,6 @@ public:
     void cb_som(std::function<void()> func) { cb_som_ = func; }
 
     // ------ threading --------
-
-    // these are not really part of the interface but handled internally
-
-    /** throw threads at band data, calls cb_bands and cb_bands_finished */
-    void startWaveThread();
-    /** stop wave analysis thread(s), if running */
-    void stopWaveThread();
 
     /** start the thread, if not already running. return if running. */
     bool startSomThread();
