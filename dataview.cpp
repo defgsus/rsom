@@ -75,3 +75,12 @@ void DataView::paint_data_curve()
         y0 = y;
     }
 }
+
+void DataView::draw_object(size_t index)
+{
+    if (!data_ || index >= data_->numObjects()) return;
+
+    objIndex_ = index;
+
+    update();
+}

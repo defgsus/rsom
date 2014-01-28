@@ -39,7 +39,7 @@ public:
 
 /** macro for printing a std::ostream compatible stream to console */
 #define SOM_PRINT(stream__, stream_arg__) \
-{ stream__ << std::hex << std::this_thread::get_id() << ": " \
+{ stream__ << std::hex << std::this_thread::get_id() << std::dec << ": " \
            << stream_arg__ << "\n"; }
 
 #ifndef NDEBUG

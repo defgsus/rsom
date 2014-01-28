@@ -18,7 +18,7 @@
 #include "core/som.h"
 
 #include <QPainter>
-
+#include <QMouseEvent>
 
 SomView::SomView(QWidget * parent)
     :   QFrame      (parent),
@@ -65,6 +65,22 @@ void SomView::paintEvent(QPaintEvent * event)
         case PM_MultiBand: paint_multi_band_(); break;
         case PM_UMap: paint_umap_(); break;
         case PM_IMap: paint_imap_(); break;
+    }
+}
+
+void SomView::mousePressEvent(QMouseEvent *event)
+{
+//    SOM_DEBUG("click " << event->x() << ", " << event->y());
+
+    if (!som_) return;
+
+    int x = event->x() * som_->sizex / (width() - frameWidth()*2);
+    int y = event->y() * som_->sizey / (height() - frameWidth()*2);
+
+    int index = y * som_->sizex + x;
+    if (index>=0 && (size_t)index < som_->size)
+    {
+        map_clicked(index);
     }
 }
 

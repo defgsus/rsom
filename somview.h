@@ -63,10 +63,14 @@ public:
 
 signals:
 
+    void map_clicked(int index);
+
 public slots:
 
 protected:
     virtual void paintEvent(QPaintEvent *);
+
+    virtual void mousePressEvent(QMouseEvent *);
 
     void paint_band_();
     void paint_multi_band_();

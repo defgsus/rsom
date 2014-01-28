@@ -555,6 +555,13 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
             start_som_signal();
         } );
 */
+        // when SOMView is clicked
+        connect(somview_, &SomView::map_clicked, [=](size_t index)
+        {
+            dataview_->draw_object( project_->som().imap[index] );
+        });
+
+
         // when SOM is allocated
         project_->cb_som_ready( [&]()
         {
