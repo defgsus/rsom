@@ -28,7 +28,7 @@
 class Project;
 class Property;
 class Properties;
-class WaveView;
+class DataView;
 class SomView;
 
 class QLabel;
@@ -80,8 +80,10 @@ protected:
     void setSomPaintMode_();
 
     Project * project_;
-    WaveView * waveview_;
+
+    DataView * dataview_;
     SomView * somview_;
+
     QLabel * sominfo_;
     QTextBrowser * log_box_;
 

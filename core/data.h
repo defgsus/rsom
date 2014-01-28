@@ -58,6 +58,9 @@ public:
 
     void createRandomData(size_t numObjects, size_t numPoints);
 
+    // divide all by max_value_
+    void normalize();
+
 private:
     /** contains all the data */
     std::vector<std::vector<Float>> data_;
@@ -65,6 +68,9 @@ private:
     std::string filepath_;
     /** number of data points. if 0, then undecided yet. */
     size_t num_points_;
+
+    /** maximum value in all data files */
+    Float max_value_;
 };
 
 #endif // DATA_H

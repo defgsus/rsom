@@ -21,9 +21,9 @@
 
 #include "property.h"
 #include "properties.h"
-#include "waveview.h"
 #include "somview.h"
 #include "helpwindow.h"
+#include "dataview.h"
 
 #include <QLayout>
 #include <QCheckBox>
@@ -295,15 +295,8 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
 
     #undef SOM_NEW_PROPERTY
 
-    const QString waveview_help =
-            "<b>waveform and spectral data display</b>"
-            "<p>The waveform to be analyzed is displayed here. It is split into a "
-            "number of <i>grains</i> (or slices) and each grain's frequency spectrum "
-            "is calculated by means of a <i>discrete fourier transform</i>. These grains "
-            "are then used to train the <i>self-organizing map</i> below.</p>"
-            "<p>Any change to the wave/analyze parameters on the right restarts the "
-            "analysis (and the <i>som</i> for that matter). The visual feedback in this "
-            "window should guide you to set the desired parameters.</p>";
+    const QString dataview_help =
+            "<b>data curve display</b>";
 
     const QString somview_help =
             "<b>self-organizing map display</b>"
@@ -376,12 +369,14 @@ ProjectView::ProjectView(Project * p, QWidget *parent) :
 
             l1->addStretch(2);
 
-/*
-        // ---- WAVE VIEW ----
+        // ---- DATA VIEW ----
 
-        waveview_ = new WaveView(this);
-        waveview_->setToolTip(waveview_help);
+        dataview_ = new DataView(this);
+        dataview_->setToolTip(dataview_help);
 
+        l0->addWidget(dataview_);
+
+        /*
         l1 = new QHBoxLayout(0);
         l0->addLayout(l1);
         {
@@ -639,7 +634,7 @@ bool ProjectView::loadData(/*const std::string& fn*/)
     #if (1)
             // "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/rausch/radioscan_05_4.5.wav"
             // "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/gong/metalfx01.wav"
-             "/home/defgsus/prog/starmaps/";
+             "/home/defgsus/prog/starmaps/hdeltagalaxy/";
     #else
         QFileDialog::getOpenFileName(this,
             "Open Sound",
@@ -659,12 +654,18 @@ bool ProjectView::loadData(/*const std::string& fn*/)
     data_dir_ = dir.absolutePath();
 
     // disconnect views
-    //waveview_->setWave(0);
+    dataview_->setData(0);
     somview_->setSom(0);
 
     if (!project_->data().loadAsciiDir(
                 fn.toStdString()
             )) return false;
+
+//    project_->data().normalize();
+
+
+    // connect data view
+    dataview_->setData(&project_->data());
 
     if (som_run_->v_bool[0])
         start_som();

@@ -40,7 +40,7 @@ void DataView::paintEvent(QPaintEvent * event)
 {
     QFrame::paintEvent(event);
 
-    if (!data_) return;
+    if (!data_ || !data_->numObjects()) return;
 
     paint_data_curve();
 }
@@ -53,6 +53,8 @@ void DataView::paint_data_curve()
 
     p.setPen(QColor(255,255,255));
 
+    size_t index = std::min(objIndex_, data_->numObjects());
+
     // simply draw enough points from the sample data
     // with a bit oversampling
     size_t w = width() * 3,
@@ -62,7 +64,7 @@ void DataView::paint_data_curve()
     for (size_t i=0; i<w; ++i)
     {
         qreal
-            val = data_->getObjectData(objIndex_)[
+            val = data_->getObjectData(index)[
                 std::min((size_t)((float)i/w * data_->numDataPoints()), data_->numDataPoints())],
             x = frameWidth() + (float)i / w * w1,
             y = height() - frameWidth() - val * h1;

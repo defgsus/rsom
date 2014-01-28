@@ -42,7 +42,7 @@ public:
     /** Sets the Data to draw on the next paintEvent.
         Make sure that the data does not reallocate while it
         is connected to this View. Set to NULL to disconnect. */
-    void setData(const Data * data) { data_ = data; }
+    void setData(const Data * data) { data_ = data; update(); }
 
     // ------- properties ------
 

@@ -27,6 +27,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "log.h"
 
 Data::Data()
+    :   num_points_ (0),
+        max_value_  (0)
 {
 }
 
@@ -64,6 +66,8 @@ bool Data::addAsciiFile(const std::string& filename)
     data_.push_back(std::vector<Float>());
     std::vector<Float> * vec = &data_.back();
 
+    Float local_max = 0.0;
+
     Float num;
     while (f.good())
     {
@@ -79,6 +83,8 @@ bool Data::addAsciiFile(const std::string& filename)
 
         // add to vector
         vec->push_back(num);
+        max_value_ = std::max(max_value_, num);
+        local_max = std::max(local_max, num);
     };
 
     // store initial data length
@@ -90,6 +96,14 @@ bool Data::addAsciiFile(const std::string& filename)
     {
         vec->push_back((Float)0);
     }
+
+    if (local_max)
+    {
+        for (auto i=vec->begin(); i!=vec->end(); ++i)
+            *i /= local_max;
+    }
+
+    SOM_DEBUG("Data::addAsciiFile:: added object with " << num_points_ << " data points.");
 
     return true;
 }
@@ -111,4 +125,17 @@ bool Data::loadAsciiDir(const std::string& pathname)
         res |= addAsciiFile(*i);
     }
     return res;
+}
+
+void Data::normalize()
+{
+    if (!max_value_) return;
+
+    for (auto o=data_.begin(); o!=data_.end(); ++o)
+    {
+        for (auto p=o->begin(); p!=o->end(); ++p)
+        {
+            *p /= max_value_;
+        }
+    }
 }
