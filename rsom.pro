@@ -40,7 +40,8 @@ SOURCES += main.cpp \
     colorscale.cpp \
     helpwindow.cpp \
     properties.cpp \
-    core/log.cpp
+    core/log.cpp \
+    core/data.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -55,7 +56,8 @@ HEADERS += \
     colorscale.h \
     property.h \
     helpwindow.h \
-    properties.h
+    properties.h \
+    core/data.h
 
 RESOURCES += \
     resources.qrc

@@ -42,6 +42,8 @@ class Project
 {
 public:
 
+    // ---- ctor ------------
+
     Project();
     ~Project();
 
