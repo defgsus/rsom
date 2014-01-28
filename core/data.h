@@ -43,7 +43,7 @@ public:
 
     /** retrieve a pointer to the indexth object's data.
         This pointer will point to numDataPoints() number of consecutive float values. */
-    const Float * data(size_t index) const
+    const Float * getObjectData(size_t index) const
         { if (index>=data_.size()) return 0; return &data_[index][0]; }
 
     // debug

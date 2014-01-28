@@ -29,6 +29,7 @@
 #include "wavefile.h"
 #include "som.h"
 
+class Data;
 
 /** Settings and task manager.
     A Project contains all settings and data
@@ -51,23 +52,17 @@ public:
 
     const std::string  info_str()       const;
 
-    const std::string& filename()       const { return filename_; }
-    const std::string& name()           const { return name_; }
-    const std::string& wavename()       const { return wave_->filename; }
+    // --- data access ---
 
-    const Wave&        wave()           const { return *wave_; }
+    const Data&        data()           const { return *data_; }
+          Data&        data()                 { return *data_; }
+
+    // --- som access ---
+
     const Som&         som()            const { return *som_; }
           Som&         som()                  { return *som_; }
 
-    bool               analyzing()      const { return run_wave_; }
     bool               running()        const { return run_som_; }
-
-    size_t             num_bands()      const { return wave_->nr_bands; }
-    size_t             num_grains()     const { return wave_->nr_grains; }
-    size_t             grain_size()     const { return wave_->grain_size; }
-    size_t             window_width()   const { return wave_->window_width; }
-    float              band_amp()       const { return band_amp_; }
-    float              band_exponent()  const { return band_exp_; }
 
     size_t             som_sizex()      const { return som_sizex_; }
     size_t             som_sizey()      const { return som_sizey_; }
@@ -87,17 +82,12 @@ public:
     /** set name of project */
     void name(const std::string& project_name);
 
-    /** set spectrum parameters, restarts wave analysis.
-        On return of call, the band data will be reallocated.
-        if band_amp_ == 0, bands will be normalized.
-        <p></p> */
-    void set(size_t nr_bands, float min_freq, float max_freq, size_t grain_size, size_t window_width,
-             float band_amp_ = 0.f, float band_exp_ = 1.f);
 
     /** set som parameters, restarts the SOM.
         On return of the call, the som will be initialized and the cb_som_ready callback
         will be send.
-        Subsequently, startSomThread() and stopSomThread() can be used to start/stop training. */
+        Subsequently, startSomThread() and stopSomThread() can be used to start/stop training.
+        @note Make sure you have the Data ready beforehand. */
     void set_som(size_t sizex, size_t sizey, int rand_seed);
 
     // -------- live training parameters ----------
@@ -107,12 +97,6 @@ public:
     void set_som_search_radius(float radius) { som_search_radius_ = radius; }
 
     // ------- IO ---------
-
-    /** Tries to load a sample.
-        Discards all current calculations and restarts Wave thread.
-        After succesful return of this function, the data is initialized
-        and will be calculated by the worker thread. */
-    bool load_wave(const std::string& soundfile_name);
 
     // ----- callbacks ----
 
@@ -156,10 +140,8 @@ private:
 
     // -- properties --
     std::string
-        filename_, name_;
-
-    // BAND params
-    float band_amp_, band_exp_;
+    // name of project. not really used right now
+        name_;
 
     // SOM parameters
     size_t som_sizex_, som_sizey_, som_seed_;
@@ -167,23 +149,22 @@ private:
 
     // -- data --
 
-    Wave * wave_;
+    Data * data_;
     Som * som_;
 
     // -- runtime --
 
     std::thread
-        * wave_thread_,
         * som_thread_;
     //std::mutex mutex_;
 
     volatile bool
-    /** flag for stopping the analysis thread */
-        run_wave_,
     /** flag for stopping the som worker thread */
         run_som_,
 
         som_ready_;
+
+    // runtime statistics
 
     int inserts_per_second_;
     size_t last_generation_;

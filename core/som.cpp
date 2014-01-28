@@ -14,10 +14,13 @@
 */
 #include "som.h"
 
+#include "data.h"
 #include "log.h"
 
 #include <sstream>
+#include <cmath>
 
+/** linear filter coefficient for following with runtime statistics */
 #define SOM_FOLLOW_SPEED 1.f/5000.f
 
 Som::Som()
@@ -45,7 +48,7 @@ Som::Som()
 std::string Som::info_str() const
 {
     std::stringstream s;
-    s << sizex << "x" << sizey << "x" << dim << " (" << sizex*sizey*dim << ")"
+    s << sizex << "x" << sizey << "x" << dim << " (" << sizex*sizey << "x" << dim << ")"
       << "\ngeneration " << generation << " (" << (generation/1000000) << "M)"
       << "\nepoch      " << generation / std::max((size_t)1, data.size())
       << "\nbest match " << stat_av_best_match
@@ -137,18 +140,11 @@ void Som::initMap()
 
 // ------------- data handling ------------
 
-void Som::clearData()
+Som::DataIndex * Som::createDataIndex(const Float * dat, int user_id)
 {
-    SOM_DEBUG("Som::clearData()");
+    SOM_DEBUGN(1, "Som::createDataIndex(" << dat << ", " << user_id << ")");
 
-    data.clear();
-}
-
-Som::Data * Som::insertData(const float * dat, int user_id)
-{
-    SOM_DEBUGN(1, "Som::insertData(" << dat << ", " << user_id << ")");
-
-    Data d;
+    DataIndex d;
 
     d.data = dat;
     d.user_id = user_id;
@@ -160,16 +156,22 @@ Som::Data * Som::insertData(const float * dat, int user_id)
 }
 
 
-void Som::insertWave(Wave& wave)
+void Som::setData(const Data * data)
 {
-    SOM_DEBUG("Som::insertWave(" << &wave << ")");
+    SOM_DEBUG("Som::setData(" << data << ")");
 
-    this->wave = &wave;
+    dataContainer = data;
 
-    clearData();
+    // clear previous indices
+    this->data.clear();
+    dim = 0;
 
-    for (size_t i=0; i<wave.nr_grains; ++i)
-        insertData( &wave.band[i][0] );
+    if (data == 0) return;
+
+    dim = data->numDataPoints();
+
+    for (size_t i=0; i<data->numObjects(); ++i)
+        createDataIndex( data->getObjectData(i), i );
 }
 
 
@@ -238,7 +240,7 @@ void Som::insert()
 }
 
 
-void Som::moveData(Data * data, size_t index)
+void Som::moveData(DataIndex * data, size_t index)
 {
     if (data->index>=0)
     {
@@ -255,7 +257,7 @@ void Som::moveData(Data * data, size_t index)
 
 // ------------------ matching ----------------------
 
-size_t Som::best_match(Data * data)
+size_t Som::best_match(DataIndex * data)
 {
     // search everywhere
     if ( data->index < 0
@@ -307,7 +309,7 @@ size_t Som::best_match(Data * data)
 }
 
 
-size_t Som::best_match_avoid(Data * data)
+size_t Som::best_match_avoid(DataIndex * data)
 {
     // search everywhere
     if ( data->index < 0
@@ -429,7 +431,7 @@ float Som::get_distance(size_t i1, size_t i2) const
     return d / dim;
 }
 
-float Som::get_distance(const Data * data, size_t ci) const
+float Som::get_distance(const DataIndex * data, size_t ci) const
 {
     float d = 0.0;
     const
@@ -543,7 +545,8 @@ void Som::calc_imap()
         int index = best_match_avoid(&data[i]);
 
         if (index >= 0)
-            imap[index] = (float)(i * wave->grain_size)/wave->info.samplerate;
+            imap[index] = data[i].user_id;
+                //(float)(i * wave->grain_size)/wave->info.samplerate;
     }
 
     // finally, we set the non-indexed cells to 0

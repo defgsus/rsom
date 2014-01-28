@@ -28,15 +28,16 @@
 #include <cstdlib>
 #include <ctime>
 #include <string>
+#include <vector>
 
-#include "wavefile.h"
+class Data;
 
 /** Kohonen network or self-organizing map.
     low-level class, public member acess
 
     use:
     create(),
-    insertData() ...,
+    setData() ...,
     initMap(),
     insert() ...,
     calc_umap(), calc_imap(), ...
@@ -47,13 +48,15 @@ class Som
 
     // ------------- types ---------------
 
+    typedef float Float;
+
     /** One sample.
         This represents the input data as well as
         running statistics. */
-    struct Data
+    struct DataIndex
     {
-        /** pointer to 'dim' floats */
-        const float * data;
+        /** pointer to 'dim' Floats */
+        const Float * data;
 
         /** index in map (-1 if not indexed yet) */
         int index;
@@ -84,23 +87,21 @@ class Som
 
     // ---------- data handling ---------------
 
-    /** Removes all inserted data. */
-    void clearData();
-
     /** Creates a data entry for training.
-        'dat' is expected to point at 'dim' consecutive floats
+        'dat' is expected to point at 'dim' consecutive Floats
         which must not change or deallocate until clearData() is
         called or the Som class is destroyed.
-        @note The validity of the returned pointer to the Data structure
-        may only be defined until insertData() is called again. */
-    Data * insertData(const float * dat, int user_id = 0);
+        @note The validity of the returned pointer to the DataIndex structure
+        may only be valid until createDataIndex() is called again. */
+    DataIndex * createDataIndex(const Float * dat, int user_id);
 
-    /** Sets Wave and fills map randomly.
-        * Convenience function for interoperating with Wave class *
-        This will use the band data in 'wave' to initialize the map.
-        To avoid a strong bias, the band data is taken apart and recombined randomly.
-        */
-    void insertWave(Wave& wave);
+    /** Sets Data container.
+        Previous indices will be cleared and createDataIndex() will
+        be called for each object in @p data.
+        Set to NULL, to disconnect from Data container and clear the indices.
+        @note The handed-over container must stay valid during the
+        lifetime of the map or until disconnected. */
+    void setData(const Data * data);
 
     // ---------- som algorithms --------------
 
@@ -108,30 +109,30 @@ class Som
     void insert();
 
     /** move the Data to map[index]. Affects Data::index and imap[] */
-    void moveData(Data * data, size_t index);
+    void moveData(DataIndex * data, size_t index);
 
     // ---------- data matching ---------------
 
     /** Returns the index of the best matching cell for the Data,
         according to current strategy. */
-    size_t best_match(Data * data);
+    size_t best_match(DataIndex * data);
 
     /** Returns the index of the best matching cell for the Data,
         according to current strategy. Avoids cells that already
         contain a data index (in imap).
         The function returns -1, if no entry could be found. */
-    size_t best_match_avoid(Data * data);
+    size_t best_match_avoid(DataIndex * data);
 
     /** Returns the distance/difference between 'data' and the map cell */
-    float get_distance(const Data * data, size_t cell_index) const;
+    Float get_distance(const DataIndex * data, size_t cell_index) const;
 
     /** Returns the distance/difference between cell i1 and i2 */
-    float get_distance(size_t i1, size_t i2) const;
+    Float get_distance(size_t i1, size_t i2) const;
 
     // ---------- info maps -------------------
 
     /** Sets whole umap to 'value' */
-    void set_umap(float value = 0.0);
+    void set_umap(Float value = 0.0);
     /** Sets whole imap to 'value' */
     void set_imap(int value = 0.0);
 
@@ -144,14 +145,14 @@ class Som
     // ---- matching with arbitrary samples ---
 
     /** Finds best matching entry for data.
-        'dat' must point to 'dim' floats */
-    size_t best_match(const float* dat);
+        'dat' must point to 'dim' Floats */
+    size_t best_match(const Float* dat);
 
     /** Finds best matching entry for data.
         Avoids fields who's 'imap' value is equal to or above zero.
-        'dat' must point to 'dim' floats.
+        'dat' must point to 'dim' Floats.
         This function is used to assign each cell a particular grain. */
-    size_t best_match_avoid(const float* dat);
+    size_t best_match_avoid(const Float* dat);
 
     // _______ PUBLIC MEMBER _________
 
@@ -160,24 +161,24 @@ class Som
         size,
     /** diagonal length, calculated by create() */
         size_diag,
-    /** number of floats per cell */
+    /** number of Floats per cell */
         dim;
     /** initial random seed */
     int rand_seed;
 
     // --- stats ---
 
-    float
+    Float
     /** running average closest distance set by insert() */
         stat_av_best_match;
 
     // --- configurables ---
     /** Data insert radius in cells, */
-    float  radius;
+    Float  radius;
     /** Data insert tranparency (transparent) to 1 (fully opaque). */
-    float  alpha;
+    Float  alpha;
     /** Search radius in cells. */
-    float  local_search_radius;
+    Float  local_search_radius;
     /** Number of inserted samples. */
     size_t generation;
 
@@ -189,16 +190,16 @@ class Som
         do_index_all;
 
     /** representation of input samples */
-    std::vector<Data> data;
+    std::vector<DataIndex> data;
     /** the self-organizing map [sizey*sizex][dim] */
-    std::vector<std::vector<float> > map;
+    std::vector<std::vector<Float> > map;
     /** neighbour relations, multi-purpose space */
-    std::vector<float> umap;
+    std::vector<Float> umap;
     /** data indices for each cell */
     std::vector<int> imap;
 
-    /** reference to the processed wavefile */
-    Wave *wave;
+    /** reference to the processed data */
+    const Data * dataContainer;
 
 };
 
