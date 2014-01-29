@@ -1,6 +1,8 @@
 r-som (spell 'awesome)
 
-A Self-Organizing Map for spectral data to create NI Reaktor tables
+A Self-Organizing Map for arbitrary (ascii) data
+
+This branch is early beta, only compiles in DEBUG mode and path to files is hardcoded.
 
 copyright 2013 stefan.berke@modular-audio-graphics.com
 
@@ -19,7 +21,6 @@ See LICENSE file for details
 -----------8<----------8<----------8<----------8<----------8<-------------
 
 This is a QT project but all stuff in core/ is independent.
-Only dependency is libsndfile.
 
 The LICENSE file and help.html will be compiled-in as a resource.
 The help.html is not complete, it will be completed at run-time with
