@@ -29,6 +29,9 @@ namespace RSOM {
 
 // forwards of kernel calls
 bool cudaSom_compare(Float * map, Index w, Index h, Index d, Float * dmap, Float * vec);
+bool cudaSom_getMax(Float * map, Index size, Index& output);
+bool cudaSom_set(Float * map, Float * vec, Index mapw, Index maph, Index dim,
+                 Index bw, Index bh, Index xpos, Index ypos, Float amp);
 
 CudaBackend::CudaBackend()
     :   size(0),
@@ -81,30 +84,31 @@ bool CudaBackend::free()
     return res;
 }
 
-bool CudaBackend::setMemory(Index sizex, Index sizey, Index dim)
+bool CudaBackend::setMemory(Index sizex_, Index sizey_, Index dim_)
 {
-    SOM_DEBUG("CudaBackend::setMemory("<<sizex<<", "<<sizey<<", "<<dim<<")");
+    SOM_DEBUG("CudaBackend::setMemory("<<sizex_<<", "<<sizey_<<", "<<dim_<<")");
 
     // re-initialize
     free();
 
     // copy data size
-    this->sizex = sizex;
-    this->sizex = sizex;
-    this->size  = sizex*sizey;
-    this->dim   = dim;
+    sizex = sizex_;
+    sizey = sizey_;
+    size  = sizex_ * sizey_;
+    dim   = dim_;
 
     // --- get device memory ----
 
     // question vector
-    CHECK_CUDA( cudaMalloc((void**)&dev_vec, dim * sizeof(Float)), return false );
+    CHECK_CUDA( cudaMalloc((void**)&dev_vec,  dim * sizeof(Float)), return false );
 
     // difference map
     CHECK_CUDA( cudaMalloc((void**)&dev_dmap, size * sizeof(Float)), return false );
 
     // som map
-    CHECK_CUDA( cudaMalloc((void**)&dev_map, size * dim * sizeof(Float)), return false );
+    CHECK_CUDA( cudaMalloc((void**)&dev_map,  size * dim * sizeof(Float)), return false );
 
+//    DEBUG_CUDA( size << " " << dev_vec << " " << dev_dmap << " " << dev_map );
 
     /*cudaExtent ext = make_cudaExtent(sizex, sizey, dim);
     cudaPitchedPtr p;
@@ -136,22 +140,10 @@ bool CudaBackend::setMemory(Index sizex, Index sizey, Index dim)
 }
 
 
-bool CudaBackend::downloadMap(Float * map)
-{
-    CHECK_CUDA( cudaMemcpy(map, dev_map, size * dim * sizeof(Float), cudaMemcpyDeviceToHost), return false );
-    return true;
-}
-
 bool CudaBackend::uploadMap(const Float * map)
 {
     CHECK_CUDA( cudaMemcpy(dev_map, map, size * dim * sizeof(Float), cudaMemcpyHostToDevice), return false );
 //    CHECK_CUDA( cudaMemcpy3D(p_upload_), return false );
-    return true;
-}
-
-bool CudaBackend::downloadDMap(Float * dmap)
-{
-    CHECK_CUDA( cudaMemcpy(dev_map, dmap, size * sizeof(Float), cudaMemcpyHostToDevice), return false );
     return true;
 }
 
@@ -161,9 +153,32 @@ bool CudaBackend::uploadVec(Float * vec)
     return true;
 }
 
-bool CudaBackend::compareMapWithVec()
+bool CudaBackend::downloadMap(Float * map)
+{
+    CHECK_CUDA( cudaMemcpy(map, dev_map, size * dim * sizeof(Float), cudaMemcpyDeviceToHost), return false );
+    return true;
+}
+
+bool CudaBackend::downloadDMap(Float * dmap)
+{
+    CHECK_CUDA( cudaMemcpy(dmap, dev_dmap, size * sizeof(Float), cudaMemcpyDeviceToHost), return false );
+    return true;
+}
+
+bool CudaBackend::set(Index x, Index y, Index rx, Index ry, Float amp)
+{
+    return cudaSom_set(dev_map, dev_vec, sizex, sizey, dim,
+                       rx*2, ry*2, x, y, amp);
+}
+
+bool CudaBackend::calcDMap()
 {
     return cudaSom_compare(dev_map, sizex, sizey, dim, dev_dmap, dev_vec);
+}
+
+bool CudaBackend::getMaxDMap(Index& index)
+{
+    return cudaSom_getMax(dev_dmap, size, index);
 }
 
 } // namespace RSOM

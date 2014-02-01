@@ -41,14 +41,30 @@ public:
         @return success. */
     bool setMemory(Index sizex, Index sizey, Index dim);
 
+    // --- upload data ---
+
     bool uploadMap(const Float * map);
+
+    bool uploadVec(Float * vec);
+
+    // --- download data ---
+
     bool downloadMap(Float * map);
 
     bool downloadDMap(Float * dmap);
 
-    bool uploadVec(Float * vec);
+    // --- functions ---
 
-    bool compareMapWithVec();
+    /** adjust the neighbourhood around x,y, with radius rx,ry, to uploaded vector. */
+    bool set(Index x, Index y, Index rx, Index ry, Float amp);
+
+    /** Calculates the distance of each cell to the
+        previously uploaded vector.
+        Result can be requested via downloadDMap(). */
+    bool calcDMap();
+
+    /** return heighest dmap value in @p index. */
+    bool getMaxDMap(Index& index);
 
     // ------ public MEMBER ---------
 

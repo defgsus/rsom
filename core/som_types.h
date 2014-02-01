@@ -29,7 +29,7 @@ namespace RSOM
     /** float type. Must be 32 bit for Cuda part right now. */
     typedef float    Float;
     /** generic int used for indices. */
-    typedef int16_t  Index;
+    typedef int32_t  Index;
 
 
 } // namespace RSOM

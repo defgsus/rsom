@@ -56,7 +56,9 @@ int testCuda()
 
     makeVector(vec, 1);
     cuda.uploadVec(&vec[0]);
-    cuda.compareMapWithVec();
+    cuda.set(10,10, 10,10, 1.0);
+
+    cuda.calcDMap();
     cuda.downloadDMap(&dmap[0]);
 
     return 0;
