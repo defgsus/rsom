@@ -26,7 +26,7 @@
 
 #include "colorscale.h"
 
-class Som;
+namespace RSOM { class Som; }
 
 class SomView : public QFrame
 {
@@ -50,7 +50,7 @@ public:
     /** Sets the Som to draw on the next paintEvent.
         Make sure that the data does not reallocate while the Som
         is connected to this View. Set to NULL to disconnect. */
-    void setSom(const Som * som) { som_ = som; }
+    void setSom(const RSOM::Som * som) { som_ = som; }
 
     /** set scale for colors */
     void paintMultiplier(float pm) { paint_mult_ = pm; update(); }
@@ -77,10 +77,10 @@ protected:
     void paint_umap_();
     void paint_imap_();
 
-    const Som * som_;
+    const RSOM::Som * som_;
 
     PaintMode pmode_;
-    size_t band_sel_;
+    int band_sel_;
     float paint_mult_;
 
     ColorScale colors_;

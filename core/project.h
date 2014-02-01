@@ -29,6 +29,10 @@
 #include "wavefile.h"
 #include "som.h"
 
+namespace RSOM
+{
+
+
 class Data;
 
 /** Settings and task manager.
@@ -168,5 +172,8 @@ private:
         cb_som_ready_,
         cb_som_;
 };
+
+
+} // namespace RSOM
 
 #endif // PROJECT_H

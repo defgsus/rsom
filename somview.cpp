@@ -98,8 +98,8 @@ void SomView::paint_band_()
     qreal sx = (qreal)w / som_->sizex + 1,
           sy = (qreal)h / som_->sizey + 1;
 
-    for (size_t y=0; y<som_->sizey; ++y)
-    for (size_t x=0; x<som_->sizex; ++x)
+    for (int y=0; y<som_->sizey; ++y)
+    for (int x=0; x<som_->sizex; ++x)
     {
         // spectral color from single band
         p.setBrush(QBrush(colors_.get(som_->map[y*som_->sizex+x][band_sel_])));
@@ -124,8 +124,8 @@ void SomView::paint_multi_band_()
     qreal sx = (qreal)w / som_->sizex + 1,
           sy = (qreal)h / som_->sizey + 1;
 
-    for (size_t y=0; y<som_->sizey; ++y)
-    for (size_t x=0; x<som_->sizex; ++x)
+    for (int y=0; y<som_->sizey; ++y)
+    for (int x=0; x<som_->sizex; ++x)
     {
         // get spectral color from data vector
         p.setBrush(QBrush(
@@ -182,8 +182,8 @@ void SomView::paint_imap_()
     qreal sx = (qreal)w / som_->sizex + 1,
           sy = (qreal)h / som_->sizey + 1;
 
-    for (size_t y=0; y<som_->sizey; ++y)
-    for (size_t x=0; x<som_->sizex; ++x)
+    for (int y=0; y<som_->sizey; ++y)
+    for (int x=0; x<som_->sizex; ++x)
     {
         // spectral color from imap
         const float f = (float)som_->imap[y*som_->sizex+x] / som_->data.size();

@@ -24,14 +24,19 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <string>
 #include <vector>
 
+#include "som_types.h"
+
+namespace RSOM
+{
+
+
+
 /** General purpose data container.
     Contains a number of samples/objects, each with a number of data points.
     */
 class Data
 {
 public:
-    /** floating point format used by this class. */
-    typedef float Float;
 
     Data();
 
@@ -74,5 +79,7 @@ private:
     /** maximum value in all data files */
     Float max_value_;
 };
+
+} // namespace RSOM
 
 #endif // DATA_H

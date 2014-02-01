@@ -44,7 +44,7 @@ enum SomDrawMode
     SDM_UMAP
 };
 
-ProjectView::ProjectView(Project * p, QWidget *parent) :
+ProjectView::ProjectView(RSOM::Project * p, QWidget *parent) :
     QFrame(parent),
     project_    (p),
     data_dir_   ("."),

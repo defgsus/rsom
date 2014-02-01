@@ -32,6 +32,8 @@
 }
 
 
+namespace RSOM
+{
 
 Project::Project()
     :
@@ -225,3 +227,6 @@ void Project::work_loop_()
 
     SOM_DEBUG("Project::work_loop_:: exit");
 }
+
+
+} // namespace RSOM

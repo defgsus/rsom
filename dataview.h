@@ -25,7 +25,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "colorscale.h"
 
-class Data;
+namespace RSOM { class Data; }
 
 
 class DataView : public QFrame
@@ -42,7 +42,7 @@ public:
     /** Sets the Data to draw on the next paintEvent.
         Make sure that the data does not reallocate while it
         is connected to this View. Set to NULL to disconnect. */
-    void setData(const Data * data) { data_ = data; update(); }
+    void setData(const RSOM::Data * data) { data_ = data; update(); }
 
     // ------- properties ------
 
@@ -59,7 +59,7 @@ protected:
 
     void paint_data_curve();
 
-    const Data * data_;
+    const RSOM::Data * data_;
 
     ColorScale colors_;
 

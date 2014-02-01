@@ -22,7 +22,7 @@
 MainWindow::MainWindow(QWidget *parent) :
     QWidget(parent)
 {
-    project_ = new Project();
+    project_ = new RSOM::Project();
 
     auto l0 = new QVBoxLayout(this);
 

@@ -23,6 +23,10 @@
 /** linear filter coefficient for following with runtime statistics */
 #define SOM_FOLLOW_SPEED 1.f/5000.f
 
+namespace RSOM
+{
+
+
 Som::Som()
     :   sizex               (0),
         sizey               (0),
@@ -59,7 +63,7 @@ std::string Som::info_str() const
 
 // ------------------ map ------------------
 
-void Som::create(int sizex, int sizey, int dim, int rand_seed)
+void Som::create(Index sizex, Index sizey, Index dim, int rand_seed)
 {
     SOM_DEBUG("Som::create(" << sizex << ", " << sizey << ", " << dim << ", " << rand_seed << ")");
 
@@ -72,7 +76,7 @@ void Som::create(int sizex, int sizey, int dim, int rand_seed)
 
     // setup data
     map.resize(size);
-    for (size_t i=0; i<size; ++i)
+    for (Index i=0; i<size; ++i)
         map[i].resize(dim);
 
     umap.resize(size);
@@ -103,8 +107,8 @@ void Som::initMap()
     // rather zero-out the map?
     if (rand_seed == -1)
     {
-        for (size_t i=0; i<size; ++i)
-            for (size_t j=0; j<dim; ++j)
+        for (Index i=0; i<size; ++i)
+            for (Index j=0; j<dim; ++j)
                 map[i][j] = 0.f;
     }
     // randomly select and take apart the sample data
@@ -112,7 +116,7 @@ void Som::initMap()
     {
         srand(rand_seed);
 
-        for (size_t i=0; i<size; ++i)
+        for (Index i=0; i<size; ++i)
         {
             // circular amplitude
             const float x = (float)(i%sizex)/sizex - 0.5f,
@@ -120,11 +124,11 @@ void Som::initMap()
                         amp = 1.f / (1.f + 5.f * sqrtf(x*x+y*y));
 
             // one random sample
-            const int dat = rand()%data.size();
-            for (size_t j=0; j<dim; ++j)
+            const Index dat = rand()%data.size();
+            for (Index j=0; j<dim; ++j)
             {
                 // look around a bit for each band
-                const int index = std::max(0, std::min((int)data.size()-1,
+                const Index index = std::max(0, std::min((Index)data.size()-1,
                         dat + (rand()%20) - 10
                     ));
                 map[i][j] = data[index].data[j] * amp;
@@ -196,7 +200,7 @@ void Som::insert()
     }
 
     // select grain to train :)
-    size_t nr = rand() % data.size();
+    Index nr = rand() % data.size();
     int index = do_non_duplicate?
                 best_match_avoid(&data[nr])
               : best_match(&data[nr]);
@@ -232,7 +236,7 @@ void Som::insert()
         const float * ps = &data[nr].data[0];
 
         // blend data
-        for (size_t k=0; k<dim; ++k, ++ps, ++pd)
+        for (int k=0; k<dim; ++k, ++ps, ++pd)
             *pd += amt * (*ps - *pd);
     }
 
@@ -240,7 +244,7 @@ void Som::insert()
 }
 
 
-void Som::moveData(DataIndex * data, size_t index)
+void Som::moveData(DataIndex * data, Index index)
 {
     if (data->index>=0)
     {
@@ -257,13 +261,13 @@ void Som::moveData(DataIndex * data, size_t index)
 
 // ------------------ matching ----------------------
 
-size_t Som::best_match(DataIndex * data)
+Index Som::best_match(DataIndex * data)
 {
     // search everywhere
     if ( data->index < 0
         || local_search_radius >= size_diag)
     {
-        size_t i = best_match(data->data);
+        Index i = best_match(data->data);
         /// @todo need distance
         moveData(data, i);
         return i;
@@ -272,7 +276,7 @@ size_t Som::best_match(DataIndex * data)
     // search locally
 
     float md = 1000000.0;
-    size_t index = data->index;
+    Index index = data->index;
 
     const float radius_sq = local_search_radius * local_search_radius;
     const int rad = ceil(local_search_radius);
@@ -309,13 +313,13 @@ size_t Som::best_match(DataIndex * data)
 }
 
 
-size_t Som::best_match_avoid(DataIndex * data)
+Index Som::best_match_avoid(DataIndex * data)
 {
     // search everywhere
     if ( data->index < 0
       || local_search_radius >= size_diag)
     {
-        size_t i = best_match_avoid(data->data);
+        Index i = best_match_avoid(data->data);
         /// @todo need distance
         moveData(data, i);
         return i;
@@ -325,7 +329,7 @@ size_t Som::best_match_avoid(DataIndex * data)
 
     bool found = false;
     float md = 1000000.0;
-    size_t index = data->index;
+    Index index = data->index;
 
     const float radius_sq = local_search_radius * local_search_radius;
     const int rad = ceil(local_search_radius);
@@ -341,7 +345,7 @@ size_t Som::best_match_avoid(DataIndex * data)
         if (x<0) x += sizex; else if (x>=(int)sizex) x -= sizex;
         if (y<0) y += sizey; else if (y>=(int)sizey) y -= sizey;
 
-        const size_t ind = y * sizex + x;
+        const Index ind = y * sizex + x;
 
         // ignore vacant cells
         if (imap[ind] >= 0
@@ -371,15 +375,15 @@ size_t Som::best_match_avoid(DataIndex * data)
 
 
 
-size_t Som::best_match(const float* dat)
+Index Som::best_match(const float* dat)
 {
     float md = 10000000.0;
     int index = 0;
-    for (size_t i=0; i<size; ++i)
+    for (Index i=0; i<size; ++i)
     {
         // difference to each cell
         float d = 0.0;
-        for (size_t j=0; j<dim; ++j)
+        for (Index j=0; j<dim; ++j)
             d += fabs(map[i][j] - dat[j]);
 
         if (d<md) { md = d; index = i; }
@@ -391,17 +395,17 @@ size_t Som::best_match(const float* dat)
 }
 
 
-size_t Som::best_match_avoid(const float* dat)
+Index Som::best_match_avoid(const float* dat)
 {
     float md = 1000000.0;
     int index = -1;
 
-    for (size_t i=0; i<size; ++i)
+    for (Index i=0; i<size; ++i)
     if (imap[i] < 0)
     {
         // difference to each cell
         float d = 0.0;
-        for (size_t j=0; j<dim; ++j)
+        for (Index j=0; j<dim; ++j)
             d += fabs(map[i][j] - dat[j]);
 
         if (d<md) { md = d; index = i; }
@@ -419,31 +423,31 @@ size_t Som::best_match_avoid(const float* dat)
 
 
 // return distance between cell i1 and i2
-float Som::get_distance(size_t i1, size_t i2) const
+Float Som::get_distance(Index i1, Index i2) const
 {
-    float d = 0.0;
+    Float d = 0.0;
     const
-    float * p1 = &map[i1][0],
+    Float * p1 = &map[i1][0],
           * p2 = &map[i2][0];
-    for (size_t i=0; i<dim; ++i, ++p1, ++p2)
+    for (Index i=0; i<dim; ++i, ++p1, ++p2)
         d += fabs(*p1 - *p2);
 
     return d / dim;
 }
 
-float Som::get_distance(const DataIndex * data, size_t ci) const
+Float Som::get_distance(const DataIndex * data, Index ci) const
 {
-    float d = 0.0;
+    Float d = 0.0;
     const
-    float * p1 = &data->data[0],
+    Float * p1 = &data->data[0],
           * p2 = &map[ci][0];
-    for (size_t i=0; i<dim; ++i, ++p1, ++p2)
+    for (Index i=0; i<dim; ++i, ++p1, ++p2)
         d += fabs(*p1 - *p2);
 
     return d / dim;
 }
 
-void Som::set_umap(float value)
+void Som::set_umap(Float value)
 {
     SOM_DEBUGN(0, "Som::set_umap(" << value << ")");
 
@@ -451,7 +455,7 @@ void Som::set_umap(float value)
         *i = value;
 }
 
-void Som::set_imap(int value)
+void Som::set_imap(Index value)
 {
     SOM_DEBUGN(0, "Som::set_imap(" << value << ")");
 
@@ -467,14 +471,14 @@ void Som::calc_umap()
 
     set_umap();
 
-    float ma = 0.00001;
+    Float ma = 0.00001;
 
     if (!do_wrap)
-    for (size_t j=1; j<sizey-1; ++j)
-    for (size_t i=1; i<sizex-1; ++i)
+    for (Index j=1; j<sizey-1; ++j)
+    for (Index i=1; i<sizex-1; ++i)
     {
         int k = j*sizex + i;
-        float d =
+        Float d =
               get_distance(k, (j-1)*sizex + i - 1) * 0.75
             + get_distance(k, (j-1)*sizex + i)
             + get_distance(k, (j-1)*sizex + i + 1) * 0.75
@@ -488,10 +492,10 @@ void Som::calc_umap()
         ma = std::max(ma, d);
     }
     else /* on do_wrap */
-    for (size_t j=0; j<sizey; ++j)
-    for (size_t i=0; i<sizex; ++i)
+    for (Index j=0; j<sizey; ++j)
+    for (Index i=0; i<sizex; ++i)
     {
-        size_t
+        Index
             k = j*sizex + i,
             j0 = (j==0)? sizey-1 : j-1,
             j1 = (j==sizey-1)? 0 : j+1,
@@ -513,7 +517,7 @@ void Som::calc_umap()
     }
 
     // normalize
-    for (size_t i=0; i<size; ++i)
+    for (Index i=0; i<size; ++i)
         umap[i] /= ma;
 }
 
@@ -555,3 +559,4 @@ void Som::calc_imap()
 }
 
 
+} // namespace RSOM

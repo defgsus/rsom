@@ -18,9 +18,10 @@
     @author def.gsus- (berke@cymatrix.org)
     @version 2012/07/11
     @version 2013/12/18 tidied up and removed opengl stuff, made x/y separate
-    @version 2012/12/21 started local search
+    @version 2013/12/21 started local search
+    @version 2014/01/28 threw out Wave class and worked with Data instead
 
-    copyright 2012, 2013 stefan.berke @ modular-audio-graphics.com
+    copyright 2012, 2013, 2014 stefan.berke @ modular-audio-graphics.com
 */
 #ifndef SOM_H_INCLUDED
 #define SOM_H_INCLUDED
@@ -29,6 +30,13 @@
 #include <ctime>
 #include <string>
 #include <vector>
+
+#include "som_types.h"
+
+
+namespace RSOM
+{
+
 
 class Data;
 
@@ -48,21 +56,19 @@ class Som
 
     // ------------- types ---------------
 
-    typedef float Float;
-
     /** One sample.
-        This represents the input data as well as
-        running statistics. */
+        This represents the input data as well as running statistics.
+        There will be a structure created for each input sample. */
     struct DataIndex
     {
         /** pointer to 'dim' Floats */
         const Float * data;
 
         /** index in map (-1 if not indexed yet) */
-        int index;
+        Index index;
 
         /** simply the index in data vector */
-        int count;
+        Index count;
 
         /** used freely */
         int user_id;
@@ -79,21 +85,13 @@ class Som
 
     /** Creates or resets the map dimension.
         @note rand_seed is here only for convenience and can be set later as well. */
-    void create(int sizex, int sizey, int dim, int rand_seed);
+    void create(Index sizex, Index sizey, Index dim, int rand_seed);
 
     /** Initializes the map according to current settings.
         For certain init strategies, make sure data was inserted before. */
     void initMap();
 
     // ---------- data handling ---------------
-
-    /** Creates a data entry for training.
-        'dat' is expected to point at 'dim' consecutive Floats
-        which must not change or deallocate until clearData() is
-        called or the Som class is destroyed.
-        @note The validity of the returned pointer to the DataIndex structure
-        may only be valid until createDataIndex() is called again. */
-    DataIndex * createDataIndex(const Float * dat, int user_id);
 
     /** Sets Data container.
         Previous indices will be cleared and createDataIndex() will
@@ -103,38 +101,50 @@ class Som
         lifetime of the map or until disconnected. */
     void setData(const Data * data);
 
+    /** Creates a data entry for training.
+        This function can be used to insert arbitrary data objects.
+        @p dat is expected to point at Som::dim consecutive Floats
+        which must not change or deallocate until clearData() is
+        called or the Som class is destroyed.
+        @note The validity of the returned pointer to the DataIndex structure
+        may only be valid until createDataIndex() is called again. */
+    DataIndex * createDataIndex(const Float * dat, int user_id);
+
     // ---------- som algorithms --------------
 
     /** Inserts a data sample into the map according to current settings. */
     void insert();
 
-    /** move the Data to map[index]. Affects Data::index and imap[] */
-    void moveData(DataIndex * data, size_t index);
+    /** move the DataIndex to map[index]. Affects Data::index and imap[] */
+    void moveData(DataIndex * data, Index index);
 
     // ---------- data matching ---------------
 
     /** Returns the index of the best matching cell for the Data,
         according to current strategy. */
-    size_t best_match(DataIndex * data);
+    Index best_match(DataIndex * data);
 
     /** Returns the index of the best matching cell for the Data,
         according to current strategy. Avoids cells that already
         contain a data index (in imap).
         The function returns -1, if no entry could be found. */
-    size_t best_match_avoid(DataIndex * data);
+    Index best_match_avoid(DataIndex * data);
 
     /** Returns the distance/difference between 'data' and the map cell */
-    Float get_distance(const DataIndex * data, size_t cell_index) const;
+    Float get_distance(const DataIndex * data, Index cell_index) const;
+
+    /** Returns the distance/difference between @p vec and the specified map cell */
+    Float get_distance(const Float * vec, Index cell_index) const;
 
     /** Returns the distance/difference between cell i1 and i2 */
-    Float get_distance(size_t i1, size_t i2) const;
+    Float get_distance(Index i1, Index i2) const;
 
     // ---------- info maps -------------------
 
     /** Sets whole umap to 'value' */
     void set_umap(Float value = 0.0);
     /** Sets whole imap to 'value' */
-    void set_imap(int value = 0.0);
+    void set_imap(Index value = 0.0);
 
     /** Calculates the distance to neighbours for each cell */
     void calc_umap();
@@ -146,17 +156,18 @@ class Som
 
     /** Finds best matching entry for data.
         'dat' must point to 'dim' Floats */
-    size_t best_match(const Float* dat);
+    Index best_match(const Float* dat);
 
     /** Finds best matching entry for data.
         Avoids fields who's 'imap' value is equal to or above zero.
         'dat' must point to 'dim' Floats.
         This function is used to assign each cell a particular grain. */
-    size_t best_match_avoid(const Float* dat);
+    Index best_match_avoid(const Float* dat);
 
     // _______ PUBLIC MEMBER _________
 
-    size_t sizex, sizey,
+    Index
+        sizex, sizey,
     /** sizex * sizey */
         size,
     /** diagonal length, calculated by create() */
@@ -196,11 +207,13 @@ class Som
     /** neighbour relations, multi-purpose space */
     std::vector<Float> umap;
     /** data indices for each cell */
-    std::vector<int> imap;
+    std::vector<Index> imap;
 
     /** reference to the processed data */
     const Data * dataContainer;
 
 };
+
+} // namespace RSOM
 
 #endif // SOM_H_INCLUDED

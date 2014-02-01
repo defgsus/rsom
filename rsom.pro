@@ -22,7 +22,7 @@ QMAKE_CXXFLAGS_RELEASE += -O2 -DNDEBUG
 # -- libs --
 
 windows: LIBS += -lsndfile-1
-else:    LIBS += -lsndfile
+else:    LIBS += -lsndfile -lcudart
 
 
 # -- files --
@@ -42,7 +42,8 @@ SOURCES += main.cpp \
     colorscale.cpp \
     helpwindow.cpp \
     properties.cpp \
-    dataview.cpp
+    dataview.cpp \
+    core/cudabackend.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -60,7 +61,10 @@ HEADERS += \
     core/log.h \
     core/data.h \
     core/scandir.h \
-    dataview.h
+    dataview.h \
+    core/som_types.h \
+    core/cudabackend.h \
+    testcuda.h
 
 RESOURCES += \
     resources.qrc

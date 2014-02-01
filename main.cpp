@@ -12,7 +12,7 @@
     along with this software; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 */
-#if (1)
+#if (0)
 #include <QApplication>
 
 #include "mainwindow.h"
@@ -39,13 +39,15 @@ int main(int argc, char *argv[])
 #include "core/data.h"
 #include "core/som.h"
 #include "core/project.h"
+#include "testcuda.h"
 
 int main(int , char **)
 {
-    Data dat; dat.addCsvFile("/home/defgsus/prog/DATA/golstat.txt"); return 0;
+    return testCuda();
+    //Data dat; dat.addCsvFile("/home/defgsus/prog/DATA/golstat.txt"); return 0;
 
 
-    Project project;
+    RSOM::Project project;
 
     project.data().createRandomData(1000, 256);
     project.set_som(31,31, 1);

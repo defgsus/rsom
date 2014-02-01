@@ -25,7 +25,7 @@
 #include <QFrame>
 
 
-class Project;
+namespace RSOM { class Project; }
 class Property;
 class Properties;
 class DataView;
@@ -39,7 +39,7 @@ class ProjectView : public QFrame
     Q_OBJECT
 public:
     /** constructs widgets from given project */
-    explicit ProjectView(Project * project, QWidget *parent = 0);
+    explicit ProjectView(RSOM::Project * project, QWidget *parent = 0);
     virtual ~ProjectView();
 
     bool loadData();
@@ -79,7 +79,7 @@ protected:
     /** update SomView */
     void setSomPaintMode_();
 
-    Project * project_;
+    RSOM::Project * project_;
 
     DataView * dataview_;
     SomView * somview_;

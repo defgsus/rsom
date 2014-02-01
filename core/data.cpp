@@ -27,6 +27,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "scandir.h"
 #include "log.h"
 
+namespace RSOM
+{
+
+
 Data::Data()
     :   num_points_ (0),
         max_value_  (0)
@@ -222,3 +226,5 @@ bool Data::addCsvFile(const std::string& filename)
 
     return true;
 }
+
+} // namespace RSOM

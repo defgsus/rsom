@@ -24,7 +24,7 @@
 
 #include <QWidget>
 
-class Project;
+namespace RSOM { class Project; }
 class ProjectView;
 
 class MainWindow : public QWidget
@@ -33,7 +33,7 @@ class MainWindow : public QWidget
 public:
     explicit MainWindow(QWidget *parent = 0);
 
-    const Project *     project()     const { return project_; }
+    const RSOM::Project *     project()     const { return project_; }
     const ProjectView * projectView() const { return view_; }
 
 signals:
@@ -41,7 +41,7 @@ signals:
 public slots:
 
 protected:
-    Project * project_;
+    RSOM::Project * project_;
     ProjectView * view_;
 };
 
