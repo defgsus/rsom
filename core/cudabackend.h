@@ -39,17 +39,28 @@ public:
 
     /** sets parameters and inits device memory.
         @return success. */
-    bool setMemory(Float * map, Index sizex, Index sizey, Index dim);
+    bool setMemory(Index sizex, Index sizey, Index dim);
 
-    bool uploadMap();
-    bool downloadMap();
+    bool uploadMap(const Float * map);
+    bool downloadMap(Float * map);
+
+    bool downloadDMap(Float * dmap);
+
+    bool uploadVec(Float * vec);
+
+    bool compareMapWithVec();
 
     // ------ public MEMBER ---------
 
     Index size, sizex, sizey, dim;
 
-    Float * map;
-    void * dev_map;
+    Float
+    /** 3d som map on device */
+        * dev_map,
+    /** 2d difference map */
+        * dev_dmap,
+    /** one vector of length CudaBackend::dim used for questions */
+        * dev_vec;
 
 private:
 

@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #define SOM_TYPES_H
 
 //#include <cstddef>
-#include <cinttypes>
+#include <inttypes.h>
 
 namespace RSOM
 {

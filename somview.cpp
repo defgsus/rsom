@@ -152,8 +152,8 @@ void SomView::paint_umap_()
     qreal sx = (qreal)w / som_->sizex + 1,
           sy = (qreal)h / som_->sizey + 1;
 
-    for (size_t y=0; y<som_->sizey; ++y)
-    for (size_t x=0; x<som_->sizex; ++x)
+    for (int y=0; y<som_->sizey; ++y)
+    for (int x=0; x<som_->sizex; ++x)
     {
         // spectral color from umap
         p.setBrush(QBrush(colors_.get(paint_mult_ * som_->umap[y*som_->sizex+x])));

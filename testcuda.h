@@ -21,7 +21,18 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #ifndef TESTCUDA_H
 #define TESTCUDA_H
 
+#include <vector>
 #include "core/cudabackend.h"
+
+/** make an artificial object from index parameter */
+void makeVector(std::vector<RSOM::Float>& vec, RSOM::Index index)
+{
+    for (size_t i=0; i<vec.size(); ++i)
+    {
+        RSOM::Float t = (RSOM::Float)i/vec.size();
+        vec[i] = 0.5 + 0.5 * cos(t * 6.28 * (1.0+0.1*index));
+    }
+}
 
 int testCuda()
 {
@@ -34,11 +45,19 @@ int testCuda()
         h = 512,
         dim = 64;
 
-    std::vector<Float> map(w*h*dim);
+    std::vector<Float>
+            map(w*h*dim),
+            dmap(w*h),
+            vec(dim);
 
-    cuda.setMemory(&map[0], w,h,dim);
-    cuda.uploadMap();
-    cuda.downloadMap();
+    cuda.setMemory(w,h,dim);
+    cuda.uploadMap(&map[0]);
+    cuda.downloadMap(&map[0]);
+
+    makeVector(vec, 1);
+    cuda.uploadVec(&vec[0]);
+    cuda.compareMapWithVec();
+    cuda.downloadDMap(&dmap[0]);
 
     return 0;
 }
