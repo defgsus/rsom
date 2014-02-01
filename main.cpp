@@ -42,6 +42,9 @@ int main(int argc, char *argv[])
 
 int main(int , char **)
 {
+    Data dat; dat.addCsvFile("/home/defgsus/prog/DATA/golstat.txt"); return 0;
+
+
     Project project;
 
     project.data().createRandomData(1000, 256);

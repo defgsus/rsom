@@ -22,6 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <cstdlib>
 #include <fstream>
+#include <array>
 
 #include "scandir.h"
 #include "log.h"
@@ -138,4 +139,86 @@ void Data::normalize()
             *p /= max_value_;
         }
     }
+}
+
+
+
+
+bool Data::addCsvFile(const std::string& filename)
+{
+    SOM_DEBUG("Data::addCsvFile(" << filename << ")");
+
+    std::ifstream f;
+    f.open(filename, std::ios_base::in);
+    if (!f.is_open())
+    {
+        SOM_ERROR("could not open csv file " << filename);
+        return false;
+    }
+
+    /*std::vector<char> line(1024);
+    f.getline(&line[0], line.size());
+    std::cout << "[" << &line[0] << "]";
+    return true;*/
+
+#define CSV_LINE_BREAK while (f.good() && f.get() != '\r');
+
+    CSV_LINE_BREAK
+
+    std::string str;
+    while (f.good())
+    {
+        f >> str;
+        //std::cout << "\n[" << str << "] ";
+
+        // create new data entry
+        std::vector<Float> vec;
+
+        Float local_max = 0.0;
+
+        Float num;
+        while (f.good() && vec.size() < 12)
+        {
+            try { f >> num; }
+            catch (...) { SOM_DEBUG("std::ifstream exception"); break; }
+            //std::cout << num << "\n";
+
+            // break if more data than needed
+            if (num_points_ && vec.size() >= num_points_)
+            {
+                SOM_ERROR("more data in file than appreciated.");
+                break;
+            }
+
+            // add to vector
+            vec.push_back(num);
+            max_value_ = std::max(max_value_, num);
+            local_max = std::max(local_max, num);
+        };
+
+        // store initial data length (when this is first item)
+        if (!num_points_)
+            num_points_ = vec.size();
+
+        // check if too less data
+        else
+        while (vec.size() < num_points_)
+        {
+            vec.push_back((Float)0);
+        }
+
+        // normalize
+        if (false && local_max)
+        {
+            for (auto i=vec.begin(); i!=vec.end(); ++i)
+                *i /= local_max;
+        }
+
+        data_.push_back(vec);
+    }
+
+    SOM_DEBUG("Data::addAsciiFile:: added " << data_.size()
+              << " objects with " << num_points_ << " data points.");
+
+    return true;
 }

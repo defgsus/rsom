@@ -54,6 +54,8 @@ public:
 
     bool loadAsciiDir(const std::string& pathname);
 
+    bool addCsvFile(const std::string& filename);
+
     // debug
 
     void createRandomData(size_t numObjects, size_t numPoints);
