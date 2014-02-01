@@ -21,8 +21,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "cudabackend.h"
 
 #include "log.h"
-
-#include <cuda_runtime.h>
+#include "cuda_util.h"
 
 namespace RSOM {
 
@@ -54,12 +53,7 @@ bool CudaBackend::free()
 
     if (dev_map)
     {
-        cudaError_t err = cudaFree(dev_map);
-        if (err != cudaSuccess)
-        {
-            SOM_ERROR("cudaFree() failed on dev_map " << dev_map);
-            return false;
-        }
+        CHECK_CUDA( cudaFree(dev_map), return false );
         dev_map = 0;
     }
 
@@ -96,15 +90,12 @@ bool CudaBackend::setMemory(Float * map, Index sizex, Index sizey, Index dim)
     cudaExtent ext = make_cudaExtent(sizex, sizey, dim);
     cudaPitchedPtr p;
 
-    cudaError_t err = cudaMalloc3D(&p, ext);
-    if (err != cudaSuccess)
-    {
-        SOM_ERROR("cudaMalloc3D() failed.");
-        return false;
-    }
+    CHECK_CUDA( cudaMalloc3D(&p, ext), return false );
 
     SOM_DEBUG("CudaBackend::setMemory:: cudaMalloc3d: pitch="
               <<p.pitch<<" ptr="<<p.ptr);
+
+    dev_map = p.ptr;
 
     // setup memcpy parameters
     p_upload_ = new cudaMemcpy3DParms;
@@ -127,23 +118,13 @@ bool CudaBackend::setMemory(Float * map, Index sizex, Index sizey, Index dim)
 
 bool CudaBackend::downloadMap()
 {
-    cudaError_t err = cudaMemcpy3D(p_download_);
-    if (err != cudaSuccess)
-    {
-        SOM_ERROR("cudaMemcpy3D() download failed.");
-        return false;
-    }
+    CHECK_CUDA( cudaMemcpy3D(p_download_), return false );
     return true;
 }
 
 bool CudaBackend::uploadMap()
 {
-    cudaError_t err = cudaMemcpy3D(p_upload_);
-    if (err != cudaSuccess)
-    {
-        SOM_ERROR("cudaMemcpy3D() upload failed.");
-        return false;
-    }
+    CHECK_CUDA( cudaMemcpy3D(p_upload_), return false );
     return true;
 }
 

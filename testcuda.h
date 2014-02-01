@@ -38,6 +38,7 @@ int testCuda()
 
     cuda.setMemory(&map[0], w,h,dim);
     cuda.uploadMap();
+    cuda.downloadMap();
 
     return 0;
 }

@@ -64,7 +64,8 @@ HEADERS += \
     dataview.h \
     core/som_types.h \
     core/cudabackend.h \
-    testcuda.h
+    testcuda.h \
+    core/cuda_util.h
 
 RESOURCES += \
     resources.qrc
