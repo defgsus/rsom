@@ -18,22 +18,25 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef CUDABACKEND_H
-#define CUDABACKEND_H
+#ifndef CPUBACKEND_H
+#define CPUBACKEND_H
+
+#include <vector>
 
 #include "backend.h"
 
 
 namespace RSOM {
 
-/** Cuda backend for SOM class. */
-class CudaBackend : public Backend
+/** Cpu backend for SOM class.
+    Note that memory is copied to conform with CudaBackend. */
+class CpuBackend : public Backend
 {
 public:
-    CudaBackend();
-    ~CudaBackend();
+    CpuBackend();
+    ~CpuBackend();
 
-    /** free device memory, if any */
+    /** free memory, if any */
     bool free();
 
     /** sets parameters and inits device memory.
@@ -62,29 +65,23 @@ public:
         Result can be requested via downloadDMap(). */
     bool calcDMap();
 
-    /** return smallest dmap value in @p index. */
+    /** return index to smallest dmap value in @p index. */
     bool getMinDMap(Index& index);
 
     // ------ public MEMBER ---------
 
-    Index size, sizex, sizey, dim,
-        idx_threads,
-        idx_stride;
+    Index size, sizex, sizey, dim;
 
-    Float
-    /** 3d som map on device */
-        * dev_map,
+    std::vector<Float>
+    /** 3d som map */
+        cpu_map,
     /** 2d difference map */
-        * dev_dmap,
+        cpu_dmap,
     /** one vector of length CudaBackend::dim used for questions */
-        * dev_vec;
-    Index
-    /** scratch space to find best match */
-        * dev_idx;
-
+        cpu_vec;
 };
 
 
 } // namespace RSOM
 
-#endif // CUDABACKEND_H
+#endif // CPUBACKEND_H

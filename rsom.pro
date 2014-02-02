@@ -44,7 +44,9 @@ SOURCES += main.cpp \
     helpwindow.cpp \
     properties.cpp \
     dataview.cpp \
-    core/cudabackend.cpp
+    core/cudabackend.cpp \
+    core/backend.cpp \
+    core/cpubackend.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -66,7 +68,9 @@ HEADERS += \
     core/som_types.h \
     core/cudabackend.h \
     testcuda.h \
-    core/cuda_util.h
+    core/cuda_util.h \
+    core/backend.h \
+    core/cpubackend.h
 
 CUDA_SOURCES = \
     core/cudasom.cu

@@ -35,16 +35,15 @@ bool cudaSom_getMin(Float * map, Index size, Index& output,
                     Index * idxmap, Index threads, Index stride);
 
 CudaBackend::CudaBackend()
-    :   size(0),
+    : Backend(),
+      size(0),
       sizex(0),
       sizey(0),
       dim(0),
       dev_map(0),
       dev_dmap(0),
       dev_vec(0),
-      dev_idx(0),
-      p_upload_(0),
-      p_download_(0)
+      dev_idx(0)
 {
 }
 
@@ -85,9 +84,6 @@ bool CudaBackend::free()
         CHECK_CUDA( cudaFree(dev_idx), res = false; );
         dev_idx = 0;
     }
-
-    if (p_upload_) { delete p_upload_; p_upload_ = 0; }
-    if (p_download_) { delete p_download_; p_download_ = 0; }
 
     return res;
 }

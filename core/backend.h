@@ -18,73 +18,55 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#ifndef CUDABACKEND_H
-#define CUDABACKEND_H
+#ifndef BACKEND_H
+#define BACKEND_H
 
-#include "backend.h"
-
+#include "som_types.h"
 
 namespace RSOM {
 
-/** Cuda backend for SOM class. */
-class CudaBackend : public Backend
+/** abstract backend prototype for SOM class. */
+class Backend
 {
 public:
-    CudaBackend();
-    ~CudaBackend();
+    Backend() { }
+    virtual ~Backend() { }
 
-    /** free device memory, if any */
-    bool free();
-
-    /** sets parameters and inits device memory.
+    /** sets parameters and inits additional memory.
         @return success. */
-    bool setMemory(Index sizex, Index sizey, Index dim);
+    virtual bool setMemory(Index sizex, Index sizey, Index dim) = 0;
 
     // --- upload data ---
 
-    bool uploadMap(const Float * map);
+    /** transfer map data */
+    virtual bool uploadMap(const Float * map) = 0;
 
-    bool uploadVec(Float * vec);
+    /** transfer question vector */
+    virtual bool uploadVec(Float * vec) = 0;
 
     // --- download data ---
 
-    bool downloadMap(Float * map);
+    /** get current map [sizey][sizex][dim] */
+    virtual bool downloadMap(Float * map) = 0;
 
-    bool downloadDMap(Float * dmap);
+    /** get current difference map */
+    virtual bool downloadDMap(Float * dmap) = 0;
 
     // --- functions ---
 
     /** adjust the neighbourhood around x,y, with radius rx,ry, to uploaded vector. */
-    bool set(Index x, Index y, Index rx, Index ry, Float amp);
+    virtual bool set(Index x, Index y, Index rx, Index ry, Float amp) = 0;
 
     /** Calculates the distance of each cell to the
         previously uploaded vector.
         Result can be requested via downloadDMap(). */
-    bool calcDMap();
+    virtual bool calcDMap() = 0;
 
     /** return smallest dmap value in @p index. */
-    bool getMinDMap(Index& index);
-
-    // ------ public MEMBER ---------
-
-    Index size, sizex, sizey, dim,
-        idx_threads,
-        idx_stride;
-
-    Float
-    /** 3d som map on device */
-        * dev_map,
-    /** 2d difference map */
-        * dev_dmap,
-    /** one vector of length CudaBackend::dim used for questions */
-        * dev_vec;
-    Index
-    /** scratch space to find best match */
-        * dev_idx;
+    virtual bool getMinDMap(Index& index) = 0;
 
 };
 
-
 } // namespace RSOM
 
-#endif // CUDABACKEND_H
+#endif // BACKEND_H
