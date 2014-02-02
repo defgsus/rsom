@@ -164,6 +164,16 @@ class Som
         This function is used to assign each cell a particular grain. */
     Index best_match_avoid(const Float* dat);
 
+    // ------------ debug ------------
+
+    static void printMap(const Float * map, Index w, Index h, Index dim,
+                         Float threshold=0.5,
+                         Index screen_w = 80, Index screen_h = 20);
+
+    static void printDMap(const Float * map, Index w, Index h,
+                         Float threshold=0.5,
+                         Index screen_w = 80, Index screen_h = 20);
+
     // _______ PUBLIC MEMBER _________
 
     Index

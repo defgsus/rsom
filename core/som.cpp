@@ -559,4 +559,37 @@ void Som::calc_imap()
 }
 
 
+
+
+
+// ---------------------- debug --------------------------
+
+void Som::printMap(const Float * map, Index w, Index h, Index dim,
+                         Float threshold, Index screen_w, Index screen_h)
+{
+    screen_w = std::min(screen_w, w);
+    screen_h = std::min(screen_h, h);
+
+    for (Index y=0; y<screen_h; ++y)
+    {
+        for (Index x=0; x<screen_w; ++x)
+            std::cout << (map[(y*w+x)*dim]>=threshold? "*" : ".");
+        std::cout << "\n";
+    }
+}
+
+void Som::printDMap(const Float * map, Index w, Index h,
+                         Float threshold, Index screen_w, Index screen_h)
+{
+    screen_w = std::min(screen_w, w);
+    screen_h = std::min(screen_h, h);
+
+    for (Index y=0; y<screen_h; ++y)
+    {
+        for (Index x=0; x<screen_w; ++x)
+            std::cout << (map[y*w+x]>=threshold? "*" : ".");
+        std::cout << "\n";
+    }
+}
+
 } // namespace RSOM

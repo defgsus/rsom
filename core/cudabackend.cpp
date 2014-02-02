@@ -28,10 +28,11 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 namespace RSOM {
 
 // forwards of kernel calls
-bool cudaSom_compare(Float * map, Index w, Index h, Index d, Float * dmap, Float * vec);
-bool cudaSom_getMax(Float * map, Index size, Index& output);
 bool cudaSom_set(Float * map, Float * vec, Index mapw, Index maph, Index dim,
                  Index bw, Index bh, Index xpos, Index ypos, Float amp);
+bool cudaSom_compare(Float * map, Index w, Index h, Index d, Float * dmap, Float * vec);
+bool cudaSom_getMin(Float * map, Index size, Index& output,
+                    Index * idxmap, Index threads, Index stride);
 
 CudaBackend::CudaBackend()
     :   size(0),
@@ -41,6 +42,7 @@ CudaBackend::CudaBackend()
       dev_map(0),
       dev_dmap(0),
       dev_vec(0),
+      dev_idx(0),
       p_upload_(0),
       p_download_(0)
 {
@@ -78,6 +80,12 @@ bool CudaBackend::free()
         dev_vec = 0;
     }
 
+    if (dev_idx)
+    {
+        CHECK_CUDA( cudaFree(dev_idx), res = false; );
+        dev_idx = 0;
+    }
+
     if (p_upload_) { delete p_upload_; p_upload_ = 0; }
     if (p_download_) { delete p_download_; p_download_ = 0; }
 
@@ -107,6 +115,10 @@ bool CudaBackend::setMemory(Index sizex_, Index sizey_, Index dim_)
 
     // som map
     CHECK_CUDA( cudaMalloc((void**)&dev_map,  size * dim * sizeof(Float)), return false );
+
+    idx_threads = 512;
+    idx_stride = size / idx_threads;
+    CHECK_CUDA( cudaMalloc((void**)&dev_idx,  idx_threads * sizeof(Index)), return false );
 
 //    DEBUG_CUDA( size << " " << dev_vec << " " << dev_dmap << " " << dev_map );
 
@@ -176,9 +188,11 @@ bool CudaBackend::calcDMap()
     return cudaSom_compare(dev_map, sizex, sizey, dim, dev_dmap, dev_vec);
 }
 
-bool CudaBackend::getMaxDMap(Index& index)
+bool CudaBackend::getMinDMap(Index& index)
 {
-    return cudaSom_getMax(dev_dmap, size, index);
+
+    return cudaSom_getMin(dev_dmap, size, index,
+                          dev_idx, idx_threads, idx_stride);
 }
 
 } // namespace RSOM

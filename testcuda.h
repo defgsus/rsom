@@ -23,16 +23,56 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <vector>
 #include "core/cudabackend.h"
+#include "core/som.h"
 
 /** make an artificial object from index parameter */
 void makeVector(std::vector<RSOM::Float>& vec, RSOM::Index index)
 {
     for (size_t i=0; i<vec.size(); ++i)
     {
-        RSOM::Float t = (RSOM::Float)i/vec.size();
-        vec[i] = 0.5 + 0.5 * cos(t * 6.28 * (1.0+0.1*index));
+        if (index == 0)
+            vec[i] = 1.0;
+        else
+        {
+            RSOM::Float t = (RSOM::Float)i/vec.size();
+            vec[i] = 0.5 + 0.5 * cos(t * 6.28 * (1.0+0.1*index) + 0.1*i);
+        }
     }
 }
+
+
+bool insertSome(RSOM::CudaBackend & cuda, RSOM::Index w, RSOM::Index h, RSOM::Index dim, RSOM::Index numIt)
+{
+    using namespace RSOM;
+
+    std::vector<Float> vec(dim);
+
+    for (Index i=0; i<numIt; ++i)
+    {
+        std::cout << i << "/" << numIt << "       \r";
+
+        // create and upload vector
+        makeVector(vec, i+1);
+        cuda.uploadVec(&vec[0]);
+
+        // get best match
+        if (!cuda.calcDMap())
+            return false;
+
+        Index idx;
+        if (!cuda.getMinDMap(idx))
+            return false;
+
+        // insert
+        //Index x = rand()%(w/2), y = rand()%(h/2);
+        Index x = idx%w, y = idx/w;
+        if (!cuda.set(x,y, 10,10, 1.0))
+            return false;
+
+    }
+    return true;
+}
+
 
 int testCuda()
 {
@@ -54,12 +94,24 @@ int testCuda()
     cuda.uploadMap(&map[0]);
     cuda.downloadMap(&map[0]);
 
-    makeVector(vec, 1);
-    cuda.uploadVec(&vec[0]);
-    cuda.set(10,10, 10,10, 1.0);
+    makeVector(vec, 0);
+
+    //cuda.uploadVec(&vec[0]);
+    //cuda.set(0,0, 10,10, 1.0);
+
+    insertSome(cuda, w, h, dim, 2000);
+
+    cuda.downloadMap(&map[0]);
+
+    Som::printMap(&map[0], w, h, dim, 0.05);
 
     cuda.calcDMap();
     cuda.downloadDMap(&dmap[0]);
+    Som::printDMap(&dmap[0], w, h);
+
+    Index idx;
+    cuda.getMinDMap(idx);
+    std::cout << "best match: " << idx << " = " << (idx%w) << ", " << (idx/w) << "\n";
 
     return 0;
 }

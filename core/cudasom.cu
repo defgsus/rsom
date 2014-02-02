@@ -32,23 +32,24 @@ namespace RSOM
 // ------------------------ SET --------------------------------
 
 __global__ void kernel_set(Float * map, Float * vec, Index w, Index h, Index dim,
-                           Index bw, Index bh,// Index bxo, Index byo,
+                           Index bw, Index bh,
+                           Index bworg, Index bhorg, Index bxo, Index byo,
                            Index xo, Index yo,
                            Float b_amp)
 {
     const Index
-            x = blockDim.x * blockIdx.x + threadIdx.x + xo,
-            y = blockDim.y * blockIdx.y + threadIdx.y + yo;
+            x = blockDim.x * blockIdx.x + threadIdx.x,
+            y = blockDim.y * blockIdx.y + threadIdx.y;
 
-    if (x<w && y<h)
+    if (x<bw && y<bh)
     {
         // calc radius dependent amplitude
-        Float   dx = (Float)(x - xo) / bw * 2.f,
-                dy = (Float)(y - yo) / bh * 2.f,
+        Float   dx = (Float)(x - bworg/2 + bxo) / bworg * 2,
+                dy = (Float)(y - bhorg/2 + byo) / bhorg * 2,
                 d = sqrtf(dx*dx+dy*dy);
         Float amp = b_amp * max(0.f, 1.f - d);
 
-        Float * p = &map[(y*w+x)*dim];
+        Float * p = &map[((y+yo)*w+x+xo)*dim];
         for (Index i=0; i<dim; ++i, ++p)
             *p += amp * (*vec - *p);
     }
@@ -63,14 +64,14 @@ bool cudaSom_set(Float * map, Float * vec, Index mapw, Index maph, Index dim,
         bys = bh,
     // brush corner position
         bx = xpos - bw/2,
-        by = ypos - bw/2;
+        by = ypos - bh/2,
     // brush offset (for edge clamping)
-        //bxo = 0,
-        //byo = 0
+        bxo = 0,
+        byo = 0;
 
     // out of map?
-    if (bx < 0) { bxs += bx; /*bxo = -bx;*/ bx = 0; }
-    if (by < 0) { bys += by; /*byo = -by;*/ by = 0; }
+    if (bx < 0) { bxs += bx; bxo = -bx; bx = 0; }
+    if (by < 0) { bys += by; byo = -by; by = 0; }
     // limit width/height
     if (bx+bxs >= mapw) bxs = mapw - bxs - 1;
     if (by+bys >= maph) bys = maph - bys - 1;
@@ -81,7 +82,9 @@ bool cudaSom_set(Float * map, Float * vec, Index mapw, Index maph, Index dim,
             blocks((bxs+threads.x-1)/threads.x, (bys+threads.y-1)/threads.y);
 
     CHECK_CUDA_KERNEL(( kernel_set<<<blocks, threads>>>(map, vec, mapw, maph, dim,
-                                                        bxs,bys,bx,by,amp) ), return false );
+                                                        bxs,bys,
+                                                        bw, bh, bxo,byo,
+                                                        bx,by,amp) ), return false );
 
     return true;
 }
@@ -107,7 +110,7 @@ __global__ void kernel_compare(Float * map, Float * dmap, Float * vec, Index siz
         }
 
         // store result
-        dmap[0] = d / dim;
+        dmap[i] = d / dim;
     }
 }
 
@@ -125,8 +128,60 @@ bool cudaSom_compare(Float * map, Index w, Index h, Index dim, Float * dmap, Flo
 
 // ----------------------- GET MAX -------------------------------
 
-bool cudaSom_getMax(Float * map, Index size, Index& output)
+__global__ void kernel_reduce_min(Index * minindex, Float *dmap, Index size, Index stride)
 {
+    const Index tid = threadIdx.x;
+    Index i = (blockDim.x * blockIdx.x + tid) * stride;
+
+    for (Index j = 0; j<stride && i<size; ++j, ++i)
+    {
+        Float d = dmap[i];
+        if (d < dmap[minindex[tid]])
+            minindex[tid] = i;
+    }
+}
+
+__global__ void kernel_get_min(Index * minindex, Float * dmap, Index size)
+{
+    Index m = 0;
+    Float d = dmap[minindex[0]];
+    for (Index i = 1; i<size; ++i)
+    {
+        Index midx = minindex[i];
+        Float d1 = dmap[midx];
+        if (d1 < d)
+        {
+            m = midx;
+            d = d1;
+        }
+    }
+    minindex[0] = m;
+}
+
+/** Searches for the minimum value in dmap.
+    @p size is the size of @p dmap, e.g. width * height.
+    @p idxmap is a scratch area that needs to be allocated to size / threads ints.
+    @p stride must be size / threads
+    */
+bool cudaSom_getMin(Float * dmap, Index size, Index& output,
+                    Index * idxmap, Index threads, Index stride)
+{
+    // clear idxmap
+    CHECK_CUDA( cudaMemset(idxmap, 0, threads * sizeof(Index)), return false );
+
+    // reduce
+    CHECK_CUDA_KERNEL((
+        kernel_reduce_min<<<stride, threads>>>(idxmap, dmap, size, stride)
+            ), return false );
+
+    // get min in reduced map
+    CHECK_CUDA_KERNEL((
+        kernel_get_min<<<1, 1>>>(idxmap, dmap, stride)
+            ), return false );
+
+    // get the first entry
+    CHECK_CUDA( cudaMemcpy(&output, idxmap, sizeof(Index), cudaMemcpyDeviceToHost), return false );
+
     return true;
 }
 

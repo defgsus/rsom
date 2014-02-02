@@ -63,12 +63,14 @@ public:
         Result can be requested via downloadDMap(). */
     bool calcDMap();
 
-    /** return heighest dmap value in @p index. */
-    bool getMaxDMap(Index& index);
+    /** return smallest dmap value in @p index. */
+    bool getMinDMap(Index& index);
 
     // ------ public MEMBER ---------
 
-    Index size, sizex, sizey, dim;
+    Index size, sizex, sizey, dim,
+        idx_threads,
+        idx_stride;
 
     Float
     /** 3d som map on device */
@@ -77,6 +79,9 @@ public:
         * dev_dmap,
     /** one vector of length CudaBackend::dim used for questions */
         * dev_vec;
+    Index
+    /** scratch space to find best match */
+        * dev_idx;
 
 private:
 
