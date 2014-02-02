@@ -23,6 +23,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <vector>
 #include "core/cudabackend.h"
+#include "core/cpubackend.h"
 #include "core/som.h"
 
 /** make an artificial object from index parameter */
@@ -41,44 +42,86 @@ void makeVector(std::vector<RSOM::Float>& vec, RSOM::Index index)
 }
 
 
-bool insertSome(RSOM::CudaBackend & cuda, RSOM::Index w, RSOM::Index h, RSOM::Index dim, RSOM::Index numIt)
+bool insertSome(RSOM::Backend * cuda, RSOM::Index w, RSOM::Index h, RSOM::Index dim, RSOM::Index numIt)
 {
     using namespace RSOM;
 
     std::vector<Float> vec(dim);
 
+    Messure m;
     for (Index i=0; i<numIt; ++i)
     {
-        std::cout << i << "/" << numIt << "       \r";
-
         // create and upload vector
         makeVector(vec, i+1);
-        cuda.uploadVec(&vec[0]);
+        cuda->uploadVec(&vec[0]);
 
         // get best match
-        if (!cuda.calcDMap())
+        if (!cuda->calcDMap())
             return false;
 
         Index idx;
-        if (!cuda.getMinDMap(idx))
+        if (!cuda->getMinDMap(idx))
             return false;
 
         // insert
         //Index x = rand()%(w/2), y = rand()%(h/2);
         Index x = idx%w, y = idx/w;
-        if (!cuda.set(x,y, 10,10, 1.0))
+        if (!cuda->set(x,y, 10,10, 1.0))
             return false;
 
+        if ((i+1)%50==0)
+        {
+            double fps = 50.0 / m.elapsed();
+            std::cout << (i+1) << "/" << numIt
+                      << " : " << fps << "fps\n";
+            m.start();
+        }
     }
     return true;
 }
 
+template <class B>
+void testBackend()
+{
+    using namespace RSOM;
+
+    const Index
+        w = 512,
+        h = 512,
+        dim = 64;
+
+    std::vector<Float>
+            map(w*h*dim),
+            dmap(w*h),
+            vec(dim);
+
+    B som;
+
+    som.setMemory(w,h,dim);
+    som.uploadMap(&map[0]);
+
+    insertSome(&som, w, h, dim, 2000);
+
+    som.downloadMap(&map[0]);
+
+    Som::printMap(&map[0], w, h, dim, 0.05);
+
+    som.calcDMap();
+    som.downloadDMap(&dmap[0]);
+    Som::printDMap(&dmap[0], w, h);
+
+    Index idx;
+    som.getMinDMap(idx);
+    std::cout << "best match: " << idx << " = " << (idx%w) << ", " << (idx/w) << "\n";
+}
 
 int testCuda()
 {
     using namespace RSOM;
 
-    CudaBackend cuda;
+    testBackend<CudaBackend>(); return 0;
+
+    CpuBackend cuda;
 
     const Index
         w = 512,
@@ -96,10 +139,10 @@ int testCuda()
 
     makeVector(vec, 0);
 
-    //cuda.uploadVec(&vec[0]);
-    //cuda.set(0,0, 10,10, 1.0);
+    cuda.uploadVec(&vec[0]);
+    cuda.set(6,6, 5,5, 1.0);
 
-    insertSome(cuda, w, h, dim, 2000);
+    //insertSome(cuda, w, h, dim, 2000);
 
     cuda.downloadMap(&map[0]);
 

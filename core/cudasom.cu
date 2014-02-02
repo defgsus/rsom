@@ -56,15 +56,15 @@ __global__ void kernel_set(Float * map, Float * vec, Index w, Index h, Index dim
 }
 
 bool cudaSom_set(Float * map, Float * vec, Index mapw, Index maph, Index dim,
-                 Index bw, Index bh, Index xpos, Index ypos, Float amp)
+                 Index brx, Index bry, Index xpos, Index ypos, Float amp)
 {
     Index
     // actual brush size
-        bxs = bw,
-        bys = bh,
+        bxs = brx*2+1,
+        bys = bry*2+1,
     // brush corner position
-        bx = xpos - bw/2,
-        by = ypos - bh/2,
+        bx = xpos - brx,
+        by = ypos - bry,
     // brush offset (for edge clamping)
         bxo = 0,
         byo = 0;
@@ -78,12 +78,12 @@ bool cudaSom_set(Float * map, Float * vec, Index mapw, Index maph, Index dim,
 
     // set blocks/threads
     const dim3
-            threads(31, 31),
+            threads(std::min(32,bxs), std::min(32,bys)),
             blocks((bxs+threads.x-1)/threads.x, (bys+threads.y-1)/threads.y);
 
     CHECK_CUDA_KERNEL(( kernel_set<<<blocks, threads>>>(map, vec, mapw, maph, dim,
                                                         bxs,bys,
-                                                        bw, bh, bxo,byo,
+                                                        brx*2+1, bry*2+1, bxo,byo,
                                                         bx,by,amp) ), return false );
 
     return true;

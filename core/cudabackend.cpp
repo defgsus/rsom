@@ -112,7 +112,7 @@ bool CudaBackend::setMemory(Index sizex_, Index sizey_, Index dim_)
     // som map
     CHECK_CUDA( cudaMalloc((void**)&dev_map,  size * dim * sizeof(Float)), return false );
 
-    idx_threads = 512;
+    idx_threads = 1024;
     idx_stride = size / idx_threads;
     CHECK_CUDA( cudaMalloc((void**)&dev_idx,  idx_threads * sizeof(Index)), return false );
 
@@ -176,7 +176,7 @@ bool CudaBackend::downloadDMap(Float * dmap)
 bool CudaBackend::set(Index x, Index y, Index rx, Index ry, Float amp)
 {
     return cudaSom_set(dev_map, dev_vec, sizex, sizey, dim,
-                       rx*2, ry*2, x, y, amp);
+                       rx, ry, x, y, amp);
 }
 
 bool CudaBackend::calcDMap()

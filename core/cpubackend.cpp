@@ -20,6 +20,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "cpubackend.h"
 
+#include <cmath>
+
 #include "log.h"
 
 
@@ -106,16 +108,64 @@ bool CpuBackend::downloadDMap(Float * dmap)
 
 bool CpuBackend::set(Index x, Index y, Index rx, Index ry, Float amp)
 {
+    //std::cout << x << ", " << y << ", " << rx << ", " << ry << "\n";
+
+    // for each line
+    for (Index j=y-ry; j<=y+ry; ++j)
+    if (j>=0 && j<sizey)
+    {
+        Float dy = (Float)(j-y) / ry;
+
+        // for each column
+        for (Index i=x-rx; i<=x+rx; ++i)
+        if (i>=0 && i<sizex)
+        {
+            Float   dx = (Float)(i-x) / rx,
+                    d = sqrtf(dx*dx + dy*dy),
+            // amplitude from radius
+                    a = amp * ((Float)1 - d);
+            // skip outside radius
+            if (a<=0) continue;
+
+            // adjust whole vector at this cell
+            Float * p = &cpu_map[(i*sizex+j)*dim];
+            for (Index k=0; k<dim; ++k, ++p)
+                *p += a * (cpu_vec[k] - *p);
+        }
+    }
     return true;
 }
 
 bool CpuBackend::calcDMap()
 {
+    // for each cell
+    for (Index i=0; i<size; ++i)
+    {
+        Float * p = &cpu_map[i*dim];
+
+        // get difference between cpu_vec and cell
+        Float d = 0;
+        for (Index k=0; k<dim; ++k, ++p)
+            d += fabsf(cpu_vec[k] - *p);
+
+        cpu_dmap[i] = d;
+    }
     return true;
 }
 
 bool CpuBackend::getMinDMap(Index& index)
 {
+    index = 0;
+    Float md = cpu_dmap[0];
+    for (Index i=1; i<size; ++i)
+    {
+        Float d = cpu_dmap[i];
+        if (d < md)
+        {
+            index = i;
+            md = d;
+        }
+    }
     return true;
 }
 

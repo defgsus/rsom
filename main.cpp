@@ -12,6 +12,36 @@
     along with this software; if not, write to the Free Software
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 */
+
+#include <time.h>
+
+/** get system time in seconds */
+double sysTime()
+{
+    timespec cls;
+    clock_gettime(CLOCK_MONOTONIC, &cls);
+    // second + nanoseconds
+    return cls.tv_sec + 0.000000001 * cls.tv_nsec;
+}
+
+/** class to messure passed time */
+class Messure
+{
+    public:
+
+    Messure() { start(); }
+
+    /** restart counter */
+    void start() { last_time = sysTime(); }
+
+    /** return elapsed time */
+    double elapsed() { return sysTime() - last_time; }
+
+    private:
+
+    double last_time;
+};
+
 #if (0)
 #include <QApplication>
 
