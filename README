@@ -1,8 +1,8 @@
-r-som (spell 'awesome)
+r-som (spell 'awesome')
 
 A Self-Organizing Map for arbitrary (ascii) data
 
-This branch is early beta, only compiles in DEBUG mode and path to files is hardcoded.
+This is the development branch, basically to test Som and Backend classes and to compare speed (CPU/GPU).
 
 copyright 2013 stefan.berke@modular-audio-graphics.com
 
