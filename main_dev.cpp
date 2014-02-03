@@ -22,13 +22,18 @@
 #include "testcuda.h"
 #include "testsom.h"
 
-
+#include "benchmark.h"
 
 
 
 int main(int , char **)
 {
-    return testCuda();
+    //RSOM::benchmarkAll(); return 0;
+    //RSOM::benchmarkDmap(); return 0;
+    //RSOM::benchmarkInsert(); return 0;
+    RSOM::benchmarkBestmatch(); return 0;
+
+    //return testCuda();
     //return testSom();
     //Data dat; dat.addCsvFile("/home/defgsus/prog/DATA/golstat.txt"); return 0;
 

@@ -41,6 +41,7 @@ SOURCES += main_dev.cpp \
 HEADERS += \
     testcuda.h \
     testsom.h \
+    benchmark.h \
     core/som.h \
     core/wavefile.h \
     core/write_ntf.h \

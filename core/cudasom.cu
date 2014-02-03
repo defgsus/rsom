@@ -93,12 +93,16 @@ bool cudaSom_set(Float * map, Float * vec, Index mapw, Index maph, Index dim,
         bxo = 0,
         byo = 0;
 
+//    std::cout << "bx="<<bx<<" by="<<by<<"  bxs="<<bxs<<" bys="<<bys<<"  bxo="<<bxo<<" byo="<<byo<<"\n";
+
     // out of map?
     if (bx < 0) { bxs += bx; bxo = -bx; bx = 0; }
     if (by < 0) { bys += by; byo = -by; by = 0; }
     // limit width/height
-    if (bx+bxs >= mapw) bxs = mapw - bxs - 1;
-    if (by+bys >= maph) bys = maph - bys - 1;
+    bxs = std::min(bxs, mapw - bx);
+    bys = std::min(bys, mapw - by);
+
+//    std::cout << "bx="<<bx<<" by="<<by<<"  bxs="<<bxs<<" bys="<<bys<<"  bxo="<<bxo<<" byo="<<byo<<"\n";
 
     // set blocks/threads
     const dim3
