@@ -43,13 +43,16 @@ void Data::createRandomData(size_t numObjects, size_t numPoints)
 {
     num_points_ = numPoints;
 
+    int k = 0;
     data_.resize(numObjects);
-    for (auto o=data_.begin(); o!=data_.end(); ++o)
+    for (auto o=data_.begin(); o!=data_.end(); ++o, ++k)
     {
+        Float t = (Float)k / numObjects;
+
         o->resize(numPoints);
         for (auto p=o->begin(); p!=o->end(); ++p)
         {
-            *p = (Float)rand() / RAND_MAX;
+            *p = (Float)rand() / RAND_MAX * (0.5+0.5*t);
         }
     }
 }

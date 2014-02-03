@@ -46,17 +46,17 @@ void SomView::paintEvent(QPaintEvent * event)
 {
     QFrame::paintEvent(event);
 
-    if (!som_ || !som_->dim)
+    if (!som_ || !som_->dim())
     {
         SOM_DEBUG("SomView::paintEvent called without SOM");
         return;
     }
 
-    if (pmode_ == PM_Band && band_sel_ >= som_->dim)
+    if (pmode_ == PM_Band && band_sel_ >= som_->dim())
     {
         SOM_DEBUG("SomView::paintEvent:: band_sel_ was out of range");
 
-        band_sel_ = som_->dim - 1;
+        band_sel_ = som_->dim() - 1;
     }
 
     switch (pmode_)
@@ -74,11 +74,11 @@ void SomView::mousePressEvent(QMouseEvent *event)
 
     if (!som_) return;
 
-    int x = event->x() * som_->sizex / (width() - frameWidth()*2);
-    int y = event->y() * som_->sizey / (height() - frameWidth()*2);
+    int x = event->x() * som_->sizex() / (width() - frameWidth()*2);
+    int y = event->y() * som_->sizey() / (height() - frameWidth()*2);
 
-    int index = y * som_->sizex + x;
-    if (index>=0 && (size_t)index < som_->size)
+    int index = y * som_->sizex() + x;
+    if (index>=0 && (size_t)index < som_->size())
     {
         map_clicked(index);
     }
@@ -95,17 +95,20 @@ void SomView::paint_band_()
     int w = width() - frameWidth()*2,
         h = height() - frameWidth()*2;
     const
-    qreal sx = (qreal)w / som_->sizex + 1,
-          sy = (qreal)h / som_->sizey + 1;
+    qreal sx = (qreal)w / som_->sizex() + 1,
+          sy = (qreal)h / som_->sizey() + 1;
 
-    for (int y=0; y<som_->sizey; ++y)
-    for (int x=0; x<som_->sizex; ++x)
+    const RSOM::Float * map = som_->getMap();
+
+    for (int y=0; y<som_->sizey(); ++y)
+    for (int x=0; x<som_->sizex(); ++x)
     {
         // spectral color from single band
-        p.setBrush(QBrush(colors_.get(som_->map[y*som_->sizex+x][band_sel_])));
+        p.setBrush(QBrush(colors_.get(
+            map[(y*som_->sizex()+x)*som_->dim() + band_sel_])));
 
-        p.drawRect( (qreal)x / som_->sizex * w + frameWidth(),
-                    (qreal)y / som_->sizey * h + frameWidth(),
+        p.drawRect( (qreal)x / som_->sizex() * w + frameWidth(),
+                    (qreal)y / som_->sizey() * h + frameWidth(),
                     sx, sy );
 
     }
@@ -121,19 +124,21 @@ void SomView::paint_multi_band_()
     int w = width() - frameWidth() * 2,
         h = height() - frameWidth() * 2;
     const
-    qreal sx = (qreal)w / som_->sizex + 1,
-          sy = (qreal)h / som_->sizey + 1;
+    qreal sx = (qreal)w / som_->sizex() + 1,
+          sy = (qreal)h / som_->sizey() + 1;
 
-    for (int y=0; y<som_->sizey; ++y)
-    for (int x=0; x<som_->sizex; ++x)
+    const RSOM::Float * map = som_->getMap();
+
+    for (int y=0; y<som_->sizey(); ++y)
+    for (int x=0; x<som_->sizex(); ++x)
     {
         // get spectral color from data vector
         p.setBrush(QBrush(
-            colors_.get_spectral(&som_->map[y*som_->sizex+x][0], som_->dim, paint_mult_)
+            colors_.get_spectral(&map[(y*som_->sizex()+x)*som_->dim()], som_->dim(), paint_mult_)
                    ));
 
-        p.drawRect( (qreal)x / som_->sizex * w + frameWidth(),
-                    (qreal)y / som_->sizey * h + frameWidth(),
+        p.drawRect( (qreal)x / som_->sizex() * w + frameWidth(),
+                    (qreal)y / som_->sizey() * h + frameWidth(),
                     sx, sy );
 
     }
@@ -142,7 +147,7 @@ void SomView::paint_multi_band_()
 void SomView::paint_umap_()
 {
     SOM_DEBUGN(1, "SomView::paint_umap()");
-
+    /*
     QPainter p(this);
     p.setPen(Qt::NoPen);
 
@@ -163,7 +168,7 @@ void SomView::paint_umap_()
                     sx, sy );
 
     }
-
+    */
 }
 
 
@@ -171,7 +176,7 @@ void SomView::paint_imap_()
 {
     SOM_DEBUGN(1, "SomView::paint_imap()");
 
-    if (som_->data.empty()) return;
+    if (!som_->numSamples()) return;
 
     QPainter p(this);
     p.setPen(Qt::NoPen);
@@ -179,21 +184,23 @@ void SomView::paint_imap_()
     int w = width() - frameWidth() * 2,
         h = height() - frameWidth() * 2;
     const
-    qreal sx = (qreal)w / som_->sizex + 1,
-          sy = (qreal)h / som_->sizey + 1;
+    qreal sx = (qreal)w / som_->sizex() + 1,
+          sy = (qreal)h / som_->sizey() + 1;
 
-    for (int y=0; y<som_->sizey; ++y)
-    for (int x=0; x<som_->sizex; ++x)
+    const RSOM::Index * imap = som_->getIMap();
+
+    for (int y=0; y<som_->sizey(); ++y)
+    for (int x=0; x<som_->sizex(); ++x)
     {
         // spectral color from imap
-        const float f = (float)som_->imap[y*som_->sizex+x] / som_->data.size();
+        const float f = (float)imap[y*som_->sizex()+x] / som_->numSamples();
         if (f<0)
             p.setBrush(QBrush(QColor(0,0,0)));
         else
             p.setBrush(QBrush(colors_.get(paint_mult_ * f)));
 
-        p.drawRect( (qreal)x / som_->sizex * w + frameWidth(),
-                    (qreal)y / som_->sizey * h + frameWidth(),
+        p.drawRect( (qreal)x / som_->sizex() * w + frameWidth(),
+                    (qreal)y / som_->sizey() * h + frameWidth(),
                     sx, sy );
 
     }

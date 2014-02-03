@@ -70,7 +70,8 @@ HEADERS += \
     testcuda.h \
     core/cuda_util.h \
     core/backend.h \
-    core/cpubackend.h
+    core/cpubackend.h \
+    testsom.h
 
 CUDA_SOURCES = \
     core/cudasom.cu

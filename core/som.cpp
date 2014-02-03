@@ -16,6 +16,8 @@
 
 #include "data.h"
 #include "log.h"
+#include "cpubackend.h"
+#include "cudabackend.h"
 
 #include <sstream>
 #include <cmath>
@@ -27,35 +29,48 @@ namespace RSOM
 {
 
 
-Som::Som()
-    :   sizex               (0),
-        sizey               (0),
-        size                (0),
-        dim                 (0),
-        rand_seed           (0),
+Som::Som(BackendType backend_type)
+    :   sizex_               (0),
+        sizey_               (0),
+        size_                (0),
+        dim_                 (0),
+        rand_seed_           (0),
 
-        stat_av_best_match  (0),
+        stat_av_best_match_  (0),
+        generation_          (0),
+        num_failed_inserts_  (0),
 
-        radius              (1),
-        alpha               (1),
-        local_search_radius (1),
+        radius_              (1),
+        alpha_               (1),
+        local_search_radius_ (1),
 
-        generation          (0),
+        do_wrap_             (true),
+        do_non_duplicate_    (true),
 
-        do_wrap             (true),
-        do_non_duplicate    (true),
-        do_index_all        (false)
+        backend_type_        (backend_type),
+        backend_             (0)
 {
     SOM_DEBUG("Som::Som()");
+    switch (backend_type_)
+    {
+        case CPU:  backend_ = new CpuBackend(); break;
+        case CUDA: backend_ = new CudaBackend; break;
+    }
+}
+
+Som::~Som()
+{
+    delete backend_;
 }
 
 std::string Som::info_str() const
 {
     std::stringstream s;
-    s << sizex << "x" << sizey << "x" << dim << " (" << sizex*sizey << "x" << dim << ")"
-      << "\ngeneration " << generation << " (" << (generation/1000000) << "M)"
-      << "\nepoch      " << generation / std::max((size_t)1, data.size())
-      << "\nbest match " << stat_av_best_match
+    s << sizex_ << "x" << sizey_ << "x" << dim_ << " (" << sizex_*sizey_ << "x" << dim_ << ")"
+      << "\ngeneration     " << generation_ << " (" << (generation_/1000000) << "M)"
+      << "\nepoch          " << generation_ / std::max((size_t)1, samples_.size())
+      << "\nbest match     " << stat_av_best_match_
+      << "\nfailed inserts " << num_failed_inserts_
     ;
     return s.str();
 }
@@ -67,22 +82,21 @@ void Som::create(Index sizex, Index sizey, Index dim, int rand_seed)
 {
     SOM_DEBUG("Som::create(" << sizex << ", " << sizey << ", " << dim << ", " << rand_seed << ")");
 
-    this->sizex = sizex;
-    this->sizey = sizey;
-    this->size = sizex * sizey;
-    this->size_diag = sqrt(sizex*sizex + sizey*sizey);
-    this->dim = dim;
-    this->rand_seed = rand_seed;
+    sizex_      = sizex;
+    sizey_      = sizey;
+    size_       = sizex * sizey;
+    size_diag_  = sqrt(sizex*sizex + sizey*sizey);
+    dim_        = dim;
+    rand_seed_  = rand_seed;
+    generation_ = 0;
 
     // setup data
-    map.resize(size);
-    for (Index i=0; i<size; ++i)
-        map[i].resize(dim);
+    map_.resize(size_ * dim_);
+    umap_.resize(size_);
+    imap_.resize(size_);
 
-    umap.resize(size);
-    imap.resize(size);
-
-    generation = 0;
+    // setup backend
+    backend_->setMemory(sizex_, sizey_, dim_);
 }
 
 void Som::initMap()
@@ -90,53 +104,54 @@ void Som::initMap()
     SOM_DEBUG("Som::initMap()");
 
     // clear stats
-    stat_av_best_match = 0;
+    stat_av_best_match_ = 0;
+    num_failed_inserts_ = 0;
+    generation_ = 0;
 
     // clear data -> map specifics
-    for (auto i=data.begin(); i!=data.end(); ++i)
+    for (auto i=samples_.begin(); i!=samples_.end(); ++i)
         i->index = -1;
 
     // clear umap
-    for (auto i=umap.begin(); i!=umap.end(); ++i)
+    for (auto i=umap_.begin(); i!=umap_.end(); ++i)
         *i = 0;
 
     // clear imap
-    for (auto i=imap.begin(); i!=imap.end(); ++i)
+    for (auto i=imap_.begin(); i!=imap_.end(); ++i)
         *i = -1;
 
     // rather zero-out the map?
-    if (rand_seed == -1)
+    if (rand_seed_ == -1)
     {
-        for (Index i=0; i<size; ++i)
-            for (Index j=0; j<dim; ++j)
-                map[i][j] = 0.f;
+        for (Index i=0; i<size_ * dim_; ++i)
+            map_[i] = 0.f;
     }
     // randomly select and take apart the sample data
     else
     {
-        srand(rand_seed);
+        srand(rand_seed_);
 
-        for (Index i=0; i<size; ++i)
+        for (Index i=0; i<size_; ++i)
         {
             // circular amplitude
-            const float x = (float)(i%sizex)/sizex - 0.5f,
-                        y = (float)(i/sizex)/sizey - 0.5f,
+            const float x = (float)(i%sizex_)/sizex_ - 0.5f,
+                        y = (float)(i/sizex_)/sizey_ - 0.5f,
                         amp = 1.f / (1.f + 5.f * sqrtf(x*x+y*y));
 
             // one random sample
-            const Index dat = rand()%data.size();
-            for (Index j=0; j<dim; ++j)
+            const Index dat = rand()%samples_.size();
+            for (Index j=0; j<dim_; ++j)
             {
                 // look around a bit for each band
-                const Index index = std::max(0, std::min((Index)data.size()-1,
+                const Index index = std::max(0, std::min((Index)samples_.size()-1,
                         dat + (rand()%20) - 10
                     ));
-                map[i][j] = data[index].data[j] * amp;
+                map_[i*dim_+j] = samples_[index].data[j] * amp;
             }
         }
     }
 
-    generation = 0;
+    backend_->uploadMap(&map_[0]);
 }
 
 
@@ -153,10 +168,10 @@ Som::DataIndex * Som::createDataIndex(const Float * dat, int user_id)
     d.data = dat;
     d.user_id = user_id;
     d.index = -1;
-    d.count = data.size();
+    d.count = samples_.size();
 
-    data.push_back(d);
-    return &data.back();
+    samples_.push_back(d);
+    return &samples_.back();
 }
 
 
@@ -164,23 +179,41 @@ void Som::setData(const Data * data)
 {
     SOM_DEBUG("Som::setData(" << data << ")");
 
-    dataContainer = data;
+    data_container_ = data;
 
     // clear previous indices
-    this->data.clear();
-    dim = 0;
+    samples_.clear();
+    dim_ = 0;
 
     if (data == 0) return;
 
-    dim = data->numDataPoints();
+    dim_ = data->numDataPoints();
 
     for (size_t i=0; i<data->numObjects(); ++i)
         createDataIndex( data->getObjectData(i), i );
 }
 
+Float * Som::getMap()
+{
+    backend_->downloadMap(&map_[0]);
+    return &map_[0];
+}
 
+const Float * Som::getMap() const
+{
+    backend_->downloadMap(&map_[0]);
+    return &map_[0];
+}
 
+Index * Som::getIMap()
+{
+    return &imap_[0];
+}
 
+const Index * Som::getIMap() const
+{
+    return &imap_[0];
+}
 
 
 
@@ -193,20 +226,30 @@ void Som::insert()
 {
     SOM_DEBUGN(3, "Som::insert()");
 
-    if (!data.size())
+    if (samples_.empty())
     {
         SOM_ERROR("Som::insert() called without data");
         return;
     }
 
     // select grain to train :)
-    Index nr = rand() % data.size();
-    int index = do_non_duplicate?
-                best_match_avoid(&data[nr])
-              : best_match(&data[nr]);
+    Index nr = rand() % samples_.size();
+    int index = do_non_duplicate_?
+                best_match_avoid_(&samples_[nr])
+              : best_match_(&samples_[nr]);
 
-    if (index<0) return;
+    if (index<0)
+    {
+        ++num_failed_inserts_;
+        return;
+    }
 
+    // insert sample
+    const int rad = ceil(radius_);
+    backend_->uploadVec(samples_[nr].data);
+    backend_->set(index % sizex_, index / sizex_,
+                 rad, rad, alpha_);
+    /*
     // adjust cell and neighbourhood
     const float radius_sq = radius*radius;
     const int rad = ceil(radius);
@@ -239,8 +282,8 @@ void Som::insert()
         for (int k=0; k<dim; ++k, ++ps, ++pd)
             *pd += amt * (*ps - *pd);
     }
-
-    ++generation;
+    */
+    ++generation_;
 }
 
 
@@ -249,11 +292,11 @@ void Som::moveData(DataIndex * data, Index index)
     if (data->index>=0)
     {
         // remove old imap point
-        if (imap[data->index] == data->count)
-            imap[data->index] = -1;
+        if (imap_[data->index] == data->count)
+            imap_[data->index] = -1;
     }
 
-    imap[index] = data->count;
+    imap_[index] = data->count;
 
     // keep info in data
     data->index = index;
@@ -261,8 +304,18 @@ void Som::moveData(DataIndex * data, Index index)
 
 // ------------------ matching ----------------------
 
-Index Som::best_match(DataIndex * data)
+Index Som::best_match_(DataIndex * data)
 {
+    Index index = 0;
+    backend_->uploadVec(data->data);
+    backend_->calcDMap();
+    backend_->getMinDMap(index);
+
+    moveData(data, index);
+
+    return index;
+
+    /*
     // search everywhere
     if ( data->index < 0
         || local_search_radius >= size_diag)
@@ -310,11 +363,14 @@ Index Som::best_match(DataIndex * data)
     moveData(data, index);
 
     return index;
+    */
 }
 
 
-Index Som::best_match_avoid(DataIndex * data)
+Index Som::best_match_avoid_(DataIndex * data)
 {
+    return best_match_(data);
+    /*
     // search everywhere
     if ( data->index < 0
       || local_search_radius >= size_diag)
@@ -370,6 +426,7 @@ Index Som::best_match_avoid(DataIndex * data)
     moveData(data, index);
 
     return index;
+    */
 }
 
 
@@ -377,6 +434,12 @@ Index Som::best_match_avoid(DataIndex * data)
 
 Index Som::best_match(const float* dat)
 {
+    Index index = 0;
+    backend_->uploadVec(dat);
+    backend_->calcDMap();
+    backend_->getMinDMap(index);
+    return index;
+/*
     float md = 10000000.0;
     int index = 0;
     for (Index i=0; i<size; ++i)
@@ -392,11 +455,14 @@ Index Som::best_match(const float* dat)
     stat_av_best_match += SOM_FOLLOW_SPEED * (md - stat_av_best_match);
 
     return index;
+*/
 }
 
 
 Index Som::best_match_avoid(const float* dat)
 {
+    return best_match(dat);
+    /*
     float md = 1000000.0;
     int index = -1;
 
@@ -415,20 +481,21 @@ Index Som::best_match_avoid(const float* dat)
         stat_av_best_match += SOM_FOLLOW_SPEED * (md - stat_av_best_match);
 
     return index;
+    */
 }
 
 
 
 
-
+#if (0)
 
 // return distance between cell i1 and i2
 Float Som::get_distance(Index i1, Index i2) const
 {
     Float d = 0.0;
     const
-    Float * p1 = &map[i1][0],
-          * p2 = &map[i2][0];
+    Float * p1 = &map_[i1][0],
+          * p2 = &map_[i2][0];
     for (Index i=0; i<dim; ++i, ++p1, ++p2)
         d += fabs(*p1 - *p2);
 
@@ -559,7 +626,7 @@ void Som::calc_imap()
 }
 
 
-
+#endif
 
 
 // ---------------------- debug --------------------------

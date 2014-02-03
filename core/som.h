@@ -20,6 +20,7 @@
     @version 2013/12/18 tidied up and removed opengl stuff, made x/y separate
     @version 2013/12/21 started local search
     @version 2014/01/28 threw out Wave class and worked with Data instead
+    @version 2014/02/02 started Backend
 
     copyright 2012, 2013, 2014 stefan.berke @ modular-audio-graphics.com
 */
@@ -37,7 +38,7 @@
 namespace RSOM
 {
 
-
+class Backend;
 class Data;
 
 /** Kohonen network or self-organizing map.
@@ -55,6 +56,12 @@ class Som
     public:
 
     // ------------- types ---------------
+
+    enum BackendType
+    {
+        CPU,
+        CUDA
+    };
 
     /** One sample.
         This represents the input data as well as running statistics.
@@ -77,9 +84,38 @@ class Som
 
     // ------------ ctor -----------------
 
-    Som();
+    Som(BackendType backend_type = CPU);
+    ~Som();
 
+    // --------- getter ------------------
+
+    Index size() const { return size_; }
+    Index sizex() const { return sizex_; }
+    Index sizey() const { return sizey_; }
+    Index dim() const { return dim_; }
+    Index numSamples() const { return samples_.size(); }
+
+    int rand_seed() const { return rand_seed_; }
+
+    size_t generation() const { return generation_; }
+    size_t num_failed_inserts() const { return num_failed_inserts_; }
+
+    Float alpha() const { return alpha_; }
+    Float radius() const { return radius_; }
+    Float local_search_radius() const { return local_search_radius_; }
+
+    /** return a few lines of information */
     std::string info_str() const;
+
+    // ------------ debug ------------
+
+    static void printMap(const Float * map, Index w, Index h, Index dim,
+                         Float threshold=0.5,
+                         Index screen_w = 80, Index screen_h = 20);
+
+    static void printDMap(const Float * map, Index w, Index h,
+                         Float threshold=0.5,
+                         Index screen_w = 80, Index screen_h = 20);
 
     // --------- map handling ------------
 
@@ -118,39 +154,11 @@ class Som
     /** move the DataIndex to map[index]. Affects Data::index and imap[] */
     void moveData(DataIndex * data, Index index);
 
-    // ---------- data matching ---------------
+    // ---------- training parameters ---------
 
-    /** Returns the index of the best matching cell for the Data,
-        according to current strategy. */
-    Index best_match(DataIndex * data);
-
-    /** Returns the index of the best matching cell for the Data,
-        according to current strategy. Avoids cells that already
-        contain a data index (in imap).
-        The function returns -1, if no entry could be found. */
-    Index best_match_avoid(DataIndex * data);
-
-    /** Returns the distance/difference between 'data' and the map cell */
-    Float get_distance(const DataIndex * data, Index cell_index) const;
-
-    /** Returns the distance/difference between @p vec and the specified map cell */
-    Float get_distance(const Float * vec, Index cell_index) const;
-
-    /** Returns the distance/difference between cell i1 and i2 */
-    Float get_distance(Index i1, Index i2) const;
-
-    // ---------- info maps -------------------
-
-    /** Sets whole umap to 'value' */
-    void set_umap(Float value = 0.0);
-    /** Sets whole imap to 'value' */
-    void set_imap(Index value = 0.0);
-
-    /** Calculates the distance to neighbours for each cell */
-    void calc_umap();
-
-    /** find the best match for each grain and store the grain's position (in seconds) */
-    void calc_imap();
+    void alpha(Float value) { alpha_ = value; }
+    void radius(Float value) { radius_ = value; }
+    void local_search_radius(Float value) { local_search_radius_ = value; }
 
     // ---- matching with arbitrary samples ---
 
@@ -164,63 +172,95 @@ class Som
         This function is used to assign each cell a particular grain. */
     Index best_match_avoid(const Float* dat);
 
-    // ------------ debug ------------
+    // --------- map access -------------------
 
-    static void printMap(const Float * map, Index w, Index h, Index dim,
-                         Float threshold=0.5,
-                         Index screen_w = 80, Index screen_h = 20);
+    /** Returns pointer to sizey * sizex * dim floats.
+        The map is possibly copied from the device before return of function. */
+          Float * getMap();
+    const Float * getMap() const;
 
-    static void printDMap(const Float * map, Index w, Index h,
-                         Float threshold=0.5,
-                         Index screen_w = 80, Index screen_h = 20);
+    /** Returns pointer to sizey * sizex ints. */
+          Index * getIMap();
+    const Index * getIMap() const;
 
-    // _______ PUBLIC MEMBER _________
+    // _________ PRIVATE AREA _________________
+private:
+
+    // ---------- data matching ---------------
+
+    /** Returns the index of the best matching cell for the Data,
+        according to current strategy. */
+    Index best_match_(DataIndex * data);
+
+    /** Returns the index of the best matching cell for the Data,
+        according to current strategy. Avoids cells that already
+        contain a data index (in imap).
+        The function returns -1, if no entry could be found. */
+    Index best_match_avoid_(DataIndex * data);
+#if (0)
+    /** Returns the distance/difference between 'data' and the map cell */
+    Float get_distance_(const DataIndex * data, Index cell_index) const;
+
+    /** Returns the distance/difference between @p vec and the specified map cell */
+    Float get_distance_(const Float * vec, Index cell_index) const;
+
+    /** Returns the distance/difference between cell i1 and i2 */
+    Float get_distance_(Index i1, Index i2) const;
+#endif
+
+    // _______ PRIVATE MEMBER _________
 
     Index
-        sizex, sizey,
+        sizex_, sizey_,
     /** sizex * sizey */
-        size,
+        size_,
     /** diagonal length, calculated by create() */
-        size_diag,
+        size_diag_,
     /** number of Floats per cell */
-        dim;
+        dim_;
     /** initial random seed */
-    int rand_seed;
+    int rand_seed_;
 
     // --- stats ---
 
     Float
     /** running average closest distance set by insert() */
-        stat_av_best_match;
+        stat_av_best_match_;
+
+    /** Number of inserted samples. */
+    size_t generation_,
+    /** Number of calls to insert() that did not lead
+        to an actual insert. */
+        num_failed_inserts_;
 
     // --- configurables ---
     /** Data insert radius in cells, */
-    Float  radius;
+    Float  radius_;
     /** Data insert tranparency (transparent) to 1 (fully opaque). */
-    Float  alpha;
+    Float  alpha_;
     /** Search radius in cells. */
-    Float  local_search_radius;
-    /** Number of inserted samples. */
-    size_t generation;
+    Float  local_search_radius_;
 
     bool
-        do_wrap,
+        do_wrap_,
     /** no data sample can be on top of a previous other match */
-        do_non_duplicate,
-        /// @todo not fully clear
-        do_index_all;
+        do_non_duplicate_;
+
+    /** type of computation backend */
+    BackendType backend_type_;
+    Backend * backend_;
 
     /** representation of input samples */
-    std::vector<DataIndex> data;
+    std::vector<DataIndex> samples_;
     /** the self-organizing map [sizey*sizex][dim] */
-    std::vector<std::vector<Float> > map;
+    mutable std::vector<Float> map_;
     /** neighbour relations, multi-purpose space */
-    std::vector<Float> umap;
+    std::vector<Float> umap_;
     /** data indices for each cell */
-    std::vector<Index> imap;
+    std::vector<Index> imap_;
 
     /** reference to the processed data */
-    const Data * dataContainer;
+    const Data * data_container_;
 
 };
 

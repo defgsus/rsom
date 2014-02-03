@@ -42,7 +42,7 @@ class Messure
     double last_time;
 };
 
-#if (0)
+#if (1)
 #include <QApplication>
 
 #include "mainwindow.h"
@@ -70,10 +70,12 @@ int main(int argc, char *argv[])
 #include "core/som.h"
 #include "core/project.h"
 #include "testcuda.h"
+#include "testsom.h"
 
 int main(int , char **)
 {
-    return testCuda();
+    //return testCuda();
+    return testSom();
     //Data dat; dat.addCsvFile("/home/defgsus/prog/DATA/golstat.txt"); return 0;
 
 

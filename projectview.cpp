@@ -526,8 +526,8 @@ ProjectView::ProjectView(RSOM::Project * p, QWidget *parent) :
         som_radius_->     cb_value_changed( [&]() { project_->set_som_radius(som_radius_->v_float[0]); } );
         som_sradius_->    cb_value_changed( [&]() { project_->set_som_search_radius(som_sradius_->v_float[0]); } );
 
-        som_non_dupl_->   cb_value_changed( [&]() { project_->som().do_non_duplicate = som_non_dupl_->v_bool[0]; } );
-        som_wrap_->       cb_value_changed( [&]() { project_->som().do_wrap = som_wrap_->v_bool[0]; } );
+        //som_non_dupl_->   cb_value_changed( [&]() { project_->som().do_non_duplicate = som_non_dupl_->v_bool[0]; } );
+        //som_wrap_->       cb_value_changed( [&]() { project_->som().do_wrap = som_wrap_->v_bool[0]; } );
 
 
 
@@ -558,7 +558,7 @@ ProjectView::ProjectView(RSOM::Project * p, QWidget *parent) :
         // when SOMView is clicked
         connect(somview_, &SomView::map_clicked, [=](size_t index)
         {
-            dataview_->draw_object( project_->som().imap[index] );
+            //dataview_->draw_object( project_->som().imap[index] );
         });
 
 
@@ -637,12 +637,19 @@ void ProjectView::checkWidgets_()
 
 bool ProjectView::loadData(/*const std::string& fn*/)
 {
+    project_->data().createRandomData(1000, 32);
+    dataview_->setData(&project_->data());
+    somview_->setSom(&project_->som());
+    if (som_run_->v_bool[0])
+        start_som();
+    return true;
+
     QString fn =
     #if (1)
             // "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/rausch/radioscan_05_4.5.wav"
             // "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/gong/metalfx01.wav"
-             //"/home/defgsus/prog/starmaps/hdeltagalaxy/";
-             "/home/defgsus/prog/starmaps/vieles/";
+             "/home/defgsus/prog/starmaps/hdeltagalaxy/";
+             //"/home/defgsus/prog/starmaps/vieles/";
     #else
         QFileDialog::getOpenFileName(this,
             "Open Sound",
@@ -665,8 +672,8 @@ bool ProjectView::loadData(/*const std::string& fn*/)
     dataview_->setData(0);
     somview_->setSom(0);
 
-    if (!project_->data().addCsvFile("/home/defgsus/prog/DATA/golstat.txt")) return false;
-    //if (!project_->data().loadAsciiDir( fn.toStdString() )) return false;
+    //if (!project_->data().addCsvFile("/home/defgsus/prog/DATA/golstat.txt")) return false;
+    if (!project_->data().loadAsciiDir( fn.toStdString() )) return false;
 
 //    project_->data().normalize();
 
@@ -801,7 +808,7 @@ void ProjectView::setSomPaintMode_()
 
     // limit value in 'draw band number'
     if (pmode == SDM_SINGLE_BAND)
-        somd_band_nr_->setMax((int)project_->som().dim - 1);
+        somd_band_nr_->setMax((int)project_->som().dim() - 1);
 
     switch (pmode)
     {
@@ -837,12 +844,12 @@ void ProjectView::calc_maps_()
 
     if (somd_dmode_->v_int[0] == SDM_IMAP)
     {
-        if (somd_calc_imap_->v_bool[0])
-            project_->som().calc_imap();
+        //if (somd_calc_imap_->v_bool[0])
+            //project_->som().calc_imap();
     }
 
-    if (somd_dmode_->v_int[0] == SDM_UMAP)
-        project_->som().calc_umap();
+    //if (somd_dmode_->v_int[0] == SDM_UMAP)
+        //project_->som().calc_umap();
 }
 
 void ProjectView::som_update()

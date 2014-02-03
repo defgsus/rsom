@@ -29,8 +29,10 @@ namespace RSOM {
 
 // forwards of kernel calls
 bool cudaSom_set(Float * map, Float * vec, Index mapw, Index maph, Index dim,
-                 Index bw, Index bh, Index xpos, Index ypos, Float amp);
-bool cudaSom_compare(Float * map, Index w, Index h, Index d, Float * dmap, Float * vec);
+                 Index bw, Index bh, Index xpos, Index ypos, Float amp,
+                 Index threads_sqrt);
+bool cudaSom_compare(Float * map, Index w, Index h, Index d, Float * dmap, Float * vec,
+                     Index threads);
 bool cudaSom_getMin(Float * map, Index size, Index& output,
                     Index * idxmap, Index threads, Index stride);
 
@@ -112,9 +114,9 @@ bool CudaBackend::setMemory(Index sizex_, Index sizey_, Index dim_)
     // som map
     CHECK_CUDA( cudaMalloc((void**)&dev_map,  size * dim * sizeof(Float)), return false );
 
-    idx_threads = 1024;
-    idx_stride = size / idx_threads;
-    CHECK_CUDA( cudaMalloc((void**)&dev_idx,  idx_threads * sizeof(Index)), return false );
+    threads_idx = 1024;
+    stride_idx = size / threads_idx;
+    CHECK_CUDA( cudaMalloc((void**)&dev_idx,  threads_idx * sizeof(Index)), return false );
 
 //    DEBUG_CUDA( size << " " << dev_vec << " " << dev_dmap << " " << dev_map );
 
@@ -155,7 +157,7 @@ bool CudaBackend::uploadMap(const Float * map)
     return true;
 }
 
-bool CudaBackend::uploadVec(Float * vec)
+bool CudaBackend::uploadVec(const Float * vec)
 {
     CHECK_CUDA( cudaMemcpy(dev_vec, vec, dim * sizeof(Float), cudaMemcpyHostToDevice), return false );
     return true;
@@ -176,19 +178,19 @@ bool CudaBackend::downloadDMap(Float * dmap)
 bool CudaBackend::set(Index x, Index y, Index rx, Index ry, Float amp)
 {
     return cudaSom_set(dev_map, dev_vec, sizex, sizey, dim,
-                       rx, ry, x, y, amp);
+                       rx, ry, x, y, amp, 32);
 }
 
 bool CudaBackend::calcDMap()
 {
-    return cudaSom_compare(dev_map, sizex, sizey, dim, dev_dmap, dev_vec);
+    return cudaSom_compare(dev_map, sizex, sizey, dim, dev_dmap, dev_vec, 512);
 }
 
 bool CudaBackend::getMinDMap(Index& index)
 {
 
     return cudaSom_getMin(dev_dmap, size, index,
-                          dev_idx, idx_threads, idx_stride);
+                          dev_idx, threads_idx, stride_idx);
 }
 
 } // namespace RSOM

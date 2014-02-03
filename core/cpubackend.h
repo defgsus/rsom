@@ -47,7 +47,7 @@ public:
 
     bool uploadMap(const Float * map);
 
-    bool uploadVec(Float * vec);
+    bool uploadVec(const Float * vec);
 
     // --- download data ---
 

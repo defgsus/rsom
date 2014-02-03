@@ -42,7 +42,7 @@ void makeVector(std::vector<RSOM::Float>& vec, RSOM::Index index)
 }
 
 
-bool insertSome(RSOM::Backend * cuda, RSOM::Index w, RSOM::Index h, RSOM::Index dim, RSOM::Index numIt)
+bool insertSome(RSOM::Backend * cuda, RSOM::Index w, RSOM::Index /*h*/, RSOM::Index dim, RSOM::Index numIt)
 {
     using namespace RSOM;
 
@@ -59,7 +59,7 @@ bool insertSome(RSOM::Backend * cuda, RSOM::Index w, RSOM::Index h, RSOM::Index 
         if (!cuda->calcDMap())
             return false;
 
-        Index idx;
+        Index idx=0;
         if (!cuda->getMinDMap(idx))
             return false;
 

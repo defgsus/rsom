@@ -44,7 +44,7 @@ Project::Project()
       som_search_radius_ (0.07),
 
       data_              (new Data),
-      som_               (new Som),
+      som_               (new Som(Som::CUDA)),
       som_thread_        (0),
 
       run_som_           (false),
@@ -196,16 +196,16 @@ void Project::work_loop_()
 
     SOM_DEBUG("Project::work_loop_:: starting training loop");
 
-    last_generation_ = som_->generation;
+    last_generation_ = som_->generation();
 
     QElapsedTimer timer;
     timer.start();
     while (run_som_)
     {
         // set training parameters
-        som_->alpha = som_alpha_;
-        som_->radius = std::max(som_->sizex, som_->sizey) * som_radius_;
-        som_->local_search_radius = std::max(som_->sizex, som_->sizey) * som_search_radius_;
+        som_->alpha( som_alpha_ );
+        som_->radius( std::max(som_->sizex(), som_->sizey()) * som_radius_ );
+        som_->local_search_radius( std::max(som_->sizex(), som_->sizey()) * som_search_radius_ );
 
         // feed to map
         som_->insert();
@@ -215,8 +215,8 @@ void Project::work_loop_()
         {
             // messure speed
             inserts_per_second_ =
-                    (som_->generation - last_generation_) / 0.2;
-            last_generation_ = som_->generation;
+                    (som_->generation() - last_generation_) / 0.2;
+            last_generation_ = som_->generation();
 
             SOM_CALLBACK(cb_som);
             timer.start();

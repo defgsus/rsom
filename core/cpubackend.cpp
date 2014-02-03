@@ -85,7 +85,7 @@ bool CpuBackend::uploadMap(const Float * map)
     return true;
 }
 
-bool CpuBackend::uploadVec(Float * vec)
+bool CpuBackend::uploadVec(const Float * vec)
 {
     for (auto i=cpu_vec.begin(); i!=cpu_vec.end(); ++i, ++vec)
         *i = *vec;
@@ -128,7 +128,7 @@ bool CpuBackend::set(Index x, Index y, Index rx, Index ry, Float amp)
             if (a<=0) continue;
 
             // adjust whole vector at this cell
-            Float * p = &cpu_map[(i*sizex+j)*dim];
+            Float * p = &cpu_map[(j*sizex+i)*dim];
             for (Index k=0; k<dim; ++k, ++p)
                 *p += a * (cpu_vec[k] - *p);
         }

@@ -44,7 +44,7 @@ public:
 
     bool uploadMap(const Float * map);
 
-    bool uploadVec(Float * vec);
+    bool uploadVec(const Float * vec);
 
     // --- download data ---
 
@@ -68,8 +68,8 @@ public:
     // ------ public MEMBER ---------
 
     Index size, sizex, sizey, dim,
-        idx_threads,
-        idx_stride;
+        threads_idx,
+        stride_idx;
 
     Float
     /** 3d som map on device */

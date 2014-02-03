@@ -55,8 +55,15 @@ __global__ void kernel_set(Float * map, Float * vec, Index w, Index h, Index dim
     }
 }
 
+/** Inserts sample into @p map.
+ *  @p map is defined by [@p maph][@p mapw][@p dim].
+ *  Radius of adjustment is @p brx, @p bry.
+ *  Sample is inserted at @p xpos, @p ypos with amplitude @p amp.
+ *  @p threads_sqrt is the square root of maximum number of threads to use.
+ **/
 bool cudaSom_set(Float * map, Float * vec, Index mapw, Index maph, Index dim,
-                 Index brx, Index bry, Index xpos, Index ypos, Float amp)
+                 Index brx, Index bry, Index xpos, Index ypos, Float amp,
+                 Index threads_sqrt)
 {
     Index
     // actual brush size
@@ -78,7 +85,7 @@ bool cudaSom_set(Float * map, Float * vec, Index mapw, Index maph, Index dim,
 
     // set blocks/threads
     const dim3
-            threads(std::min(32,bxs), std::min(32,bys)),
+            threads(std::min(threads_sqrt,bxs), std::min(threads_sqrt,bys)),
             blocks((bxs+threads.x-1)/threads.x, (bys+threads.y-1)/threads.y);
 
     CHECK_CUDA_KERNEL(( kernel_set<<<blocks, threads>>>(map, vec, mapw, maph, dim,
@@ -114,9 +121,11 @@ __global__ void kernel_compare(Float * map, Float * dmap, Float * vec, Index siz
     }
 }
 
-bool cudaSom_compare(Float * map, Index w, Index h, Index dim, Float * dmap, Float * vec)
+/** compare each cell in map with vector @p vec.
+    Store difference of each cell in @p dmap. */
+bool cudaSom_compare(Float * map, Index w, Index h, Index dim, Float * dmap, Float * vec,
+                     Index threads)
 {
-    int threads = 512;
     int blocks = (w*h+threads-1)/threads;
 
     CHECK_CUDA_KERNEL(( kernel_compare<<<blocks, threads>>>(map, dmap, vec, w*h, dim) ),
@@ -125,6 +134,41 @@ bool cudaSom_compare(Float * map, Index w, Index h, Index dim, Float * dmap, Flo
     return true;
 }
 
+#ifdef WINDOW_FUNCTION_TODO
+__global__ void kernel_compare_window(Float * map, Float * dmap, Float * vec, Index size, Index dim)
+{
+    // cell for this thread
+    const Index i = blockDim.x * blockIdx.x + threadIdx.x;
+
+    if (i<size)
+    {
+        Float * cell = &map[i * dim];
+
+        // step through dimensions of cell
+        Float d = 0;
+        for (Index j=0; j<dim; ++j)
+        {
+            d += fabsf(vec[j] - cell[j]);
+        }
+
+        // store result
+        dmap[i] = d / dim;
+    }
+}
+
+/** compare each cell in the map window with vector @p vec.
+    Store difference of each cell in @p dmap. */
+bool cudaSom_compare_window(Float * map, Index w, Index h, Index dim, Float * dmap, Float * vec,
+                     Index threads)
+{
+    int blocks = (w*h+threads-1)/threads;
+
+    CHECK_CUDA_KERNEL(( kernel_compare<<<blocks, threads>>>(map, dmap, vec, w*h, dim) ),
+                      DEBUG_CUDA("blocks="<<blocks<<", threads="<<threads); return false );
+
+    return true;
+}
+#endif
 
 // ----------------------- GET MAX -------------------------------
 

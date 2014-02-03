@@ -42,7 +42,7 @@ public:
     virtual bool uploadMap(const Float * map) = 0;
 
     /** transfer question vector */
-    virtual bool uploadVec(Float * vec) = 0;
+    virtual bool uploadVec(const Float * vec) = 0;
 
     // --- download data ---
 
