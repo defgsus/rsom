@@ -360,14 +360,13 @@ ProjectView::ProjectView(RSOM::Project * p, QWidget *parent) :
             l1->addWidget(lab);
             lab->setText(QString::fromStdString(project_->data().filepath()));
 
-#ifdef WTF
             connect(b, &QPushButton::clicked, [=]()
             {
                 loadData();
 
                 lab->setText(QString::fromStdString(project_->data().filepath()));
             });
-#endif
+
             l1->addStretch(2);
 
         // ---- DATA VIEW ----
@@ -455,7 +454,7 @@ ProjectView::ProjectView(RSOM::Project * p, QWidget *parent) :
                 // --- export button ---
                 auto but = new QPushButton("Export selected data to Reaktor Table", this);
                 l2->addWidget(but);
-#ifdef WTF
+
                 connect(but, &QPushButton::pressed, [this]()
                 {
                     // stop som if running
@@ -467,7 +466,7 @@ ProjectView::ProjectView(RSOM::Project * p, QWidget *parent) :
                     }
                     exportTable();
                 });
-#endif
+
                 // -- info label --
                 l2->addSpacing(10);
                 sominfo_ = new QLabel(this);
@@ -558,12 +557,12 @@ ProjectView::ProjectView(RSOM::Project * p, QWidget *parent) :
         } );
 */
         // when SOMView is clicked
-#ifdef WTF
+
         connect(somview_, &SomView::map_clicked, [=](size_t index)
         {
             //dataview_->draw_object( project_->som().imap[index] );
         });
-#endif
+
 
         // when SOM is allocated
         project_->cb_som_ready( [&]()

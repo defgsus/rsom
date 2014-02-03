@@ -246,13 +246,13 @@ QWidget * Property::getWidget_(QWidget * parent, QLayout * l0, size_t i)
             cb->setChecked(v_bool[i]);
 
             // get change event
-#ifdef WTF
+
             parent->connect(cb, &QCheckBox::stateChanged, [=]()
             {
                 v_bool[i] = cb->isChecked();
                 onValueChanged_();
             });
-#endif
+
             widgets_.push_back(cb);
             widget = cb;
             break;
@@ -267,13 +267,13 @@ QWidget * Property::getWidget_(QWidget * parent, QLayout * l0, size_t i)
             spin->setValue(v_int[i]);
 
             // get change event
-#ifdef WTF
+
             parent->connect(spin, static_cast<void(QSpinBox::*)(int)>(&QSpinBox::valueChanged), [=]()
             {
                 v_int[i] = spin->value();
                 onValueChanged_();
             });
-#endif
+
             widgets_.push_back(spin);
             widget = spin;
             break;
@@ -289,13 +289,13 @@ QWidget * Property::getWidget_(QWidget * parent, QLayout * l0, size_t i)
             spin->setValue(v_float[i]);
 
             // get change event
-#ifdef WTF
+
             parent->connect(spin, static_cast<void(QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), [=]()
             {
                 v_float[i] = spin->value();
                 onValueChanged_();
             });
-#endif
+
             widgets_.push_back(spin);
             widget = spin;
             break;
@@ -320,7 +320,7 @@ QWidget * Property::getWidget_(QWidget * parent, QLayout * l0, size_t i)
             list->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
 
             // get change event
-#ifdef WTF
+
             parent->connect(list, &QListWidget::currentItemChanged, [=](QListWidgetItem*, QListWidgetItem*)
             {
                 if (list->currentRow() >= 0
@@ -332,7 +332,7 @@ QWidget * Property::getWidget_(QWidget * parent, QLayout * l0, size_t i)
                 else SOM_ERROR("unknown item index " << list->currentRow()
                                << " for Property '" << id.toStdString() << "'");
             });
-#endif
+
             widget = list;
             break;
         }
@@ -345,14 +345,14 @@ QWidget * Property::getWidget_(QWidget * parent, QLayout * l0, size_t i)
     widget->setToolTip(help);
 
     // get destroy event
-#ifdef WTF
+
     parent->connect(widget, &QWidget::destroyed, [=](QObject * obj)
     {
         Q_UNUSED(obj);
         SOM_DEBUGN(0, "Property widget '" << id.toStdString() << "'destroyed " << obj);
         disconnectWidget();
     } );
-#endif
+
     // activity
     widget->setEnabled(active_);
 
