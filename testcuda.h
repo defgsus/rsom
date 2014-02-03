@@ -128,7 +128,8 @@ void compareDMap()
 
     std::vector<Index>
         sizes = { 32, 64, 128, 256, 512, 1024 },
-        dims = { 8, 16, 128, 256, 1024 };
+        //dims = { 8, 16, 128, 256, 1024 };
+        dims = { 1 };
 
     Messure time;
     double cpu_time = 1;
@@ -148,6 +149,8 @@ void compareDMap()
 
             // create some data
             int cells = *s * *s * *d;
+            // number of operations
+            int numOps = *s * *s;// * *d;
 
             std::vector<Float> map(cells);
             for (int i=0; i<cells; ++i)
@@ -164,19 +167,19 @@ void compareDMap()
                 b->uploadMap(&map[0]);
                 b->uploadVec(&vec[0]);
 
-                int iters = std::max(2, 100000000 / (*s * *s * *d));
+                int iters = std::max(2, 100000000 / numOps);
 
                 time.start();
                 for (int i=0; i<iters; ++i)
                 {
-                    b->calcDMap();
-                    //b->debugFunc();
+                    //b->calcDMap();
+                    b->debugFunc();
                 }
                 CHECK_CUDA( cudaThreadSynchronize(), );
 
                 double elapsed = time.elapsed();
 
-                double ops = (*s * *s * *d * iters) / elapsed;
+                double ops = (numOps * iters) / elapsed;
 
                 std::cout
                         //<< std::setw(12) << (int)(iters / elapsed);

@@ -284,7 +284,7 @@ __global__ void kernel_mult(Float * dst, Float * src1, Float * src2, Index size)
 
 bool cudaSom_mult(Float * dst, Float * src1, Float * src2, Index size)
 {
-    int threads = 128;
+    int threads = 512;
     int blocks = (size+threads-1)/threads;
 
     CHECK_CUDA_KERNEL(( kernel_mult<<<blocks, threads>>>(dst, src1, src2, size) ),

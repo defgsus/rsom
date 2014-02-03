@@ -198,7 +198,7 @@ bool CudaBackend::set(Index x, Index y, Index rx, Index ry, Float amp)
 
 bool CudaBackend::calcDMap()
 {
-    return cudaSom_compare(dev_map, sizex, sizey, dim, dev_dmap, dev_vec, 1024);
+    return cudaSom_compare(dev_map, sizex, sizey, dim, dev_dmap, dev_vec, 256);
 }
 
 bool CudaBackend::getMinDMap(Index& index)
