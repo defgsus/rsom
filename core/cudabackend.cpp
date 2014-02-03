@@ -37,7 +37,7 @@ bool cudaSom_compare(Float * map, Index w, Index h, Index d, Float * dmap, Float
                      Index threads);
 bool cudaSom_getMin(Float * map, Index size, Index& output,
                     Index * idxmap, Index threads, Index stride);
-bool cudaSom_mult(Float * dst, Float * src1, Float * src2, Index size);
+bool cudaSom_mult(Float * dst, Float * src1, Float * src2, Index size, Index threads);
 
 CudaBackend::CudaBackend(Index max_threads)
     : Backend(),
@@ -205,7 +205,7 @@ bool CudaBackend::getMinDMap(Index& index)
 
 bool CudaBackend::debugFunc()
 {
-    return cudaSom_mult(dev_dmap, dev_map, dev_map, size);
+    return cudaSom_mult(dev_dmap, dev_map, dev_map, size, max_threads);
 }
 
 } // namespace RSOM

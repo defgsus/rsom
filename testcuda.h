@@ -133,9 +133,11 @@ void compareDMap()
                        };
 
     std::vector<Index>
-        sizes = { 32, 64, 128, 256, 374, 512, 768, 1024 },
-        dims = { 8, 16, 128, 256, 512 };
-        //dims = { 1 };
+        sizes = { 32, 64, 128, 256, 374, 512, 768, 1024
+                  , 2048, 4096
+                },
+        //dims = { 8, 16, 128, 256, 512 };
+        dims = { 1 };
 
 
     // header line
@@ -172,39 +174,46 @@ void compareDMap()
                 vec[i] = (Float)rand()/RAND_MAX;
 
             // number of operations
-            int numOps = *s * *s * *d;
+            int numOps = *s * *s;// * *d;
 
             // test each backend
             for (auto be=backends.begin(); be!=backends.end(); ++be)
             {
+                int iters;
+                double elapsed, ops;
+
+            #define BENCH_CHECK_CUDA(command__) \
+                if (!command__) { \
+                    std::cout << "|" << std::setw(18) << "fail "; \
+                    b->free(); \
+                    goto skip_; \
+                }
+
                 // allocate memory in backend
                 Backend * b = *be;
-                if (!b->setMemory(*s, *s, *d))
-                {
-                    std::cout << "|" << std::setw(18) << "fail ";
-                    continue;
-                }
-                // init with some data
-                b->uploadMap(&map[0]);
-                b->uploadVec(&vec[0]);
+                BENCH_CHECK_CUDA( b->setMemory(*s, *s, *d) );
 
-                int iters = std::max(1, 100000000 / numOps);
+                // init with some data
+                BENCH_CHECK_CUDA( b->uploadMap(&map[0]) );
+                BENCH_CHECK_CUDA( b->uploadVec(&vec[0]) );
+
+                iters = std::max(std::max(1,32 / *d), 100000000 / numOps);
 
                 time.start();
                 for (int i=0; i<iters; ++i)
                 {
-                    b->calcDMap();
-                    //b->debugFunc();
+                    //BENCH_CHECK_CUDA( b->calcDMap() );
+                    BENCH_CHECK_CUDA( b->debugFunc() );
                 }
-                CHECK_CUDA( cudaThreadSynchronize(), );
+                if (b->name() != "cpu") CHECK_CUDA( cudaThreadSynchronize(), );
 
-                double elapsed = time.elapsed();
+                elapsed = time.elapsed();
 
                 // free the backend resource
                 b->free();
 
                 // print statistics
-                double ops = (numOps * iters) / elapsed;
+                ops = (numOps * iters) / elapsed;
 
                 std::cout
                         << "|"
@@ -218,6 +227,7 @@ void compareDMap()
                 }
                 else
                     std::cout << std::setw(5) << std::setprecision(3) << (cpu_time / elapsed) << "x ";
+            skip_:
 
                 std::cout.flush();
             }
