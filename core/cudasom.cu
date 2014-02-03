@@ -22,9 +22,12 @@
 
 
 #include <cuda.h>
+#include <thrust/device_vector.h>
 
 #include "cuda_util.h"
 #include "som_types.h"
+
+#include "cudasom.cuh"
 
 namespace RSOM
 {
@@ -114,7 +117,7 @@ __global__ void kernel_compare(Float * map, Float * dmap, Float * vec, Index siz
         Float d = 0;
         for (Index j=0; j<dim; ++j)
         {
-            d += fabsf(vec[j] - cell[j]);
+            d += fabsf(vec[j] - map[j * size + i]);
         }
 
         // store result
@@ -122,6 +125,7 @@ __global__ void kernel_compare(Float * map, Float * dmap, Float * vec, Index siz
     }
 }
 
+/** only for testing. working depends on number of threads!! */
 __global__ void kernel_compare_shared(Float * map, Float * dmap, Float * vec, Index size, Index dim)
 {
     // cell for this thread
@@ -318,6 +322,81 @@ bool cudaSom_mult(Float * dst, Float * src1, Float * src2, Index size, Index thr
     return true;
 }
 
+
+
+
+// ----------------------------- thrust ----------------------------------
+
+bool thrust_alloc(ThrustInterface ** interface, Index sizex, Index sizey, Index dim)
+{
+    *interface = new ThrustInterface;
+    ThrustInterface * iface = *interface;
+
+    iface->size = sizex * sizey;
+    iface->dim = dim;
+
+    try
+    {
+        iface->map.resize(sizex * sizey * dim);
+        iface->dmap.resize(sizex * sizey);
+        iface->vec.resize(dim);
+        iface->diff.resize(dim);
+    }
+    catch (...) { return false; }
+
+    return true;
+}
+
+bool thrust_free(ThrustInterface ** interface)
+{
+    *interface = new ThrustInterface;
+    ThrustInterface * iface = *interface;
+
+    iface->size = iface->dim = 0;
+
+    iface->map.clear();
+    iface->dmap.clear();
+    iface->vec.clear();
+    iface->diff.clear();
+
+    return true;
+}
+
+struct diff_function
+{
+    __host__ __device__
+    Float operator () (const Float& x , const Float& y ) const
+    {
+        return fabsf(x - y);
+    }
+};
+
+template <class InputIterator>
+bool thrust_diff(thrust::device_vector <Float>& X, InputIterator Y, thrust::device_vector <Float>& out)
+{
+    try
+    {
+        thrust::transform(X.begin(), X.end(), Y, out.begin(), diff_function() );
+    }
+    catch (...) { return false; }
+    return true;
+}
+
+bool thrust_dmap(ThrustInterface * iface)
+{
+    for (Index i=0; i<iface->size; ++i)
+    {
+        if (!thrust_diff(iface->vec, iface->map.begin() + i * iface->dim,
+                    iface->diff)) return false;
+
+        try
+        {
+            iface->dmap[i] = thrust::reduce(iface->diff.begin(), iface->diff.end());
+        }
+        catch (...) { return false; }
+    }
+    return true;
+}
 
 
 } // namespace RSOM

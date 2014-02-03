@@ -22,7 +22,7 @@ QMAKE_CXXFLAGS_RELEASE += -O2 -DNDEBUG
 windows: LIBS += -lsndfile-1
 else:    LIBS += -lsndfile
 
-CUDA_LIBS = -lcuda -lcudart
+CUDA_LIBS = -lcuda -lcudart -lcublas
 
 # -- files --
 
@@ -55,7 +55,11 @@ HEADERS += \
     core/time.h
 
 CUDA_SOURCES = \
-    core/cudasom.cu
+    core/cudasom.cuh \
+    core/cudasom.cu \
+    core/cublasbackend.h \
+    core/cublasbackend.cpp
+
 
 RESOURCES += \
     resources.qrc

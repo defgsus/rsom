@@ -17,24 +17,21 @@ along with this software; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
-
-#ifndef CUDABACKEND_H
-#define CUDABACKEND_H
+#ifndef CUBLASBACKEND_H
+#define CUBLASBACKEND_H
 
 
 #include "backend.h"
-
+#include "cublas_v2.h"
 
 namespace RSOM {
 
-struct ThrustInterface;
-
 /** Cuda backend for SOM class. */
-class CudaBackend : public Backend
+class CublasBackend : public Backend
 {
 public:
-    CudaBackend(Index max_threads);
-    ~CudaBackend();
+    CublasBackend(Index max_threads = 0);
+    ~CublasBackend();
 
     std::string name() const;
 
@@ -74,23 +71,20 @@ public:
 
     // ------ public MEMBER ---------
 
-    Index size, sizex, sizey, dim,
-        threads_idx,
-        stride_idx;
+    Index size, sizex, sizey, dim;
+
+    static cublasHandle_t handle;
 
     Float
     /** 3d som map on device */
         * dev_map,
     /** 2d difference map */
         * dev_dmap,
-    /** one vector of length CudaBackend::dim used for questions */
+    /** one vector of length CublasBackend::dim used for questions */
         * dev_vec;
     Index
     /** scratch space to find best match */
         * dev_idx;
-
-    ThrustInterface *
-        thrust_interface;
 
     /** maximum number of threads.
         @todo this probably is more complicated. */
@@ -101,4 +95,4 @@ public:
 
 } // namespace RSOM
 
-#endif // CUDABACKEND_H
+#endif // CUBLASBACKEND_H

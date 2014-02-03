@@ -83,6 +83,18 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
     }
 #endif
 
+/** return the next power of two for x */
+template <typename I>
+I nextPow2( I x )
+{
+    --x;
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    return ++x;
+}
 
 
 #endif // CUDA_UTIL_H

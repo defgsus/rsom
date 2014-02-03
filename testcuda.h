@@ -27,6 +27,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include "core/cuda_util.h"
 
 #include "core/cudabackend.h"
+#include "core/cublasbackend.h"
 #include "core/cpubackend.h"
 #include "core/som.h"
 
@@ -130,6 +131,7 @@ void compareDMap()
                          new CudaBackend(256),
                          new CudaBackend(512),
                          new CudaBackend(1024)
+                         //,new CublasBackend()
                        };
 
     std::vector<Index>

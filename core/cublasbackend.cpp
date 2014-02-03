@@ -18,34 +18,43 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
-#include "cudabackend.h"
+/** @file
+    XXX this is completely experimental pre-beta
+*/
+#include "cublasbackend.h"
 
 #include <sstream>
 
-//#include <thrust/device_vector.h>
-
-#include "log.h"
 #include "cuda_util.h"
 
+// XXX log.h requires c++0x
+//#include "log.h"
+#ifndef NDEBUG
+#   define SOM_DEBUG(stream_arg__) \
+        std::cerr << stream_arg__ << "\n";
+#else
+#   define SOM_DEBUG(unused__) { }
+#endif
 
+/** Macro for checking for cuda errors.
+    Define CHECK_CUDA before including this header to change behaviour */
+#define CHECK_CUBLAS( command__, code_on_error__ ) \
+{ \
+    SOM_DEBUG( ":" << #command__ ); \
+    cublasStatus_t err = command__; \
+    if (err != CUBLAS_STATUS_SUCCESS) \
+    { \
+        std::cerr << "Cublas Error: " << err \
+                          << "\nfor command '" #command__ "'\n"; \
+        code_on_error__; \
+    } \
+}
 
 namespace RSOM {
 
-// forwards of kernel calls
-bool cudaSom_set(Float * map, Float * vec, Index mapw, Index maph, Index dim,
-                 Index bw, Index bh, Index xpos, Index ypos, Float amp,
-                 Index threads_sqrt);
-bool cudaSom_compare(Float * map, Index w, Index h, Index d, Float * dmap, Float * vec,
-                     Index threads);
-bool cudaSom_getMin(Float * map, Index size, Index& output,
-                    Index * idxmap, Index threads, Index stride);
-bool cudaSom_mult(Float * dst, Float * src1, Float * src2, Index size, Index threads);
+cublasHandle_t CublasBackend::handle = 0;
 
-bool thrust_alloc(ThrustInterface ** iface, Index sizex, Index sizey, Index dim);
-bool thrust_free(ThrustInterface ** iface);
-bool thrust_dmap(ThrustInterface * iface);
-
-CudaBackend::CudaBackend(Index max_threads)
+CublasBackend::CublasBackend(Index max_threads)
     : Backend(),
       size(0),
       sizex(0),
@@ -54,24 +63,27 @@ CudaBackend::CudaBackend(Index max_threads)
       dev_map(0),
       dev_dmap(0),
       dev_vec(0),
-      dev_idx(0),
-      max_threads(max_threads)
+      dev_idx(0)
+
 {
+    if (!handle)
+        CHECK_CUBLAS( cublasCreate_v2(&handle), );
 }
 
-CudaBackend::~CudaBackend()
+CublasBackend::~CublasBackend()
 {
     free();
 }
 
-std::string CudaBackend::name() const
+std::string CublasBackend::name() const
 {
+    return "cublas";/*
     std::stringstream s;
     s << "cuda" << max_threads;
-    return s.str();
+    return s.str();*/
 }
 
-bool CudaBackend::free()
+bool CublasBackend::free()
 {
     sizex =
     sizey =
@@ -104,16 +116,12 @@ bool CudaBackend::free()
         dev_idx = 0;
     }
 
-    if (thrust_interface)
-    {
-        //thrust_free(&thrust_interface);
-    }
     return res;
 }
 
-bool CudaBackend::setMemory(Index sizex_, Index sizey_, Index dim_)
+bool CublasBackend::setMemory(Index sizex_, Index sizey_, Index dim_)
 {
-    SOM_DEBUG("CudaBackend::setMemory("<<sizex_<<", "<<sizey_<<", "<<dim_<<")");
+    SOM_DEBUG("CublasBackend::setMemory("<<sizex_<<", "<<sizey_<<", "<<dim_<<")");
 
     // re-initialize
     free();
@@ -135,9 +143,7 @@ bool CudaBackend::setMemory(Index sizex_, Index sizey_, Index dim_)
     // som map
     CHECK_CUDA( cudaMalloc((void**)&dev_map,  size * dim * sizeof(Float)), return false );
 
-    threads_idx = std::min(max_threads, size);
-    stride_idx = size / threads_idx;
-    CHECK_CUDA( cudaMalloc((void**)&dev_idx,  threads_idx * sizeof(Index)), return false );
+//    CHECK_CUDA( cudaMalloc((void**)&dev_idx,  threads_idx * sizeof(Index)), return false );
 
     //thrust_alloc(&thrust_interface, sizex, sizey, dim);
 
@@ -148,7 +154,7 @@ bool CudaBackend::setMemory(Index sizex_, Index sizey_, Index dim_)
 
     CHECK_CUDA( cudaMalloc3D(&p, ext), return false );
 
-    SOM_DEBUG("CudaBackend::setMemory:: cudaMalloc3d: pitch="
+    SOM_DEBUG("CublasBackend::setMemory:: cudaMalloc3d: pitch="
               <<p.pitch<<" ptr="<<p.ptr);
 
     dev_map = p.ptr;
@@ -173,52 +179,63 @@ bool CudaBackend::setMemory(Index sizex_, Index sizey_, Index dim_)
 }
 
 
-bool CudaBackend::uploadMap(const Float * map)
+bool CublasBackend::uploadMap(const Float * map)
 {
     CHECK_CUDA( cudaMemcpy(dev_map, map, size * dim * sizeof(Float), cudaMemcpyHostToDevice), return false );
 //    CHECK_CUDA( cudaMemcpy3D(p_upload_), return false );
     return true;
 }
 
-bool CudaBackend::uploadVec(const Float * vec)
+bool CublasBackend::uploadVec(const Float * vec)
 {
     CHECK_CUDA( cudaMemcpy(dev_vec, vec, dim * sizeof(Float), cudaMemcpyHostToDevice), return false );
     return true;
 }
 
-bool CudaBackend::downloadMap(Float * map)
+bool CublasBackend::downloadMap(Float * map)
 {
     CHECK_CUDA( cudaMemcpy(map, dev_map, size * dim * sizeof(Float), cudaMemcpyDeviceToHost), return false );
     return true;
 }
 
-bool CudaBackend::downloadDMap(Float * dmap)
+bool CublasBackend::downloadDMap(Float * dmap)
 {
     CHECK_CUDA( cudaMemcpy(dmap, dev_dmap, size * sizeof(Float), cudaMemcpyDeviceToHost), return false );
     return true;
 }
 
-bool CudaBackend::set(Index x, Index y, Index rx, Index ry, Float amp)
+bool CublasBackend::set(Index x, Index y, Index rx, Index ry, Float amp)
 {
-    return cudaSom_set(dev_map, dev_vec, sizex, sizey, dim,
-                       rx, ry, x, y, amp, 32);
+//    return cudaSom_set(dev_map, dev_vec, sizex, sizey, dim,
+//                       rx, ry, x, y, amp, 32);
 }
 
-bool CudaBackend::calcDMap()
+bool CublasBackend::calcDMap()
 {
-    return cudaSom_compare(dev_map, sizex, sizey, dim, dev_dmap, dev_vec, max_threads);
-    //return thrust_dmap(thrust_interface);
+//    for (Index i=0; i<size; ++i)
+//        CHECK_CUBLAS( cublasSdot_v2(handle, dim, dev_vec, 1, &dev_map[i*dim], 1, &dev_dmap[i]), );
+      Float r;
+        CHECK_CUBLAS( cublasSdot(handle, dim, dev_vec, 1, dev_map, 1, &r), );
+//    Float alpha = 1.f;
+//    CHECK_CUBLAS( cublasSaxpy(handle, dim, &alpha, dev_map, 1, dev_vec, 1), );
+
+    int midx;
+    CHECK_CUBLAS( cublasIsamin_v2(handle, size, dev_dmap, 1, &midx), );
+
+//    return cudaSom_compare(dev_map, sizex, sizey, dim, dev_dmap, dev_vec, max_threads);
+    return true;
 }
 
-bool CudaBackend::getMinDMap(Index& index)
+bool CublasBackend::getMinDMap(Index& index)
 {
-    return cudaSom_getMin(dev_dmap, size, index,
-                          dev_idx, threads_idx, stride_idx);
+//    return cudaSom_getMin(dev_dmap, size, index,
+//                          dev_idx, threads_idx, stride_idx);
 }
 
-bool CudaBackend::debugFunc()
+bool CublasBackend::debugFunc()
 {
-    return cudaSom_mult(dev_dmap, dev_map, dev_map, size, max_threads);
+//    cublasSscal_v2(
+//    return cudaSom_mult(dev_dmap, dev_map, dev_map, size, max_threads);
 }
 
 } // namespace RSOM
