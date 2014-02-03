@@ -65,6 +65,9 @@ public:
     /** return smallest dmap value in @p index. */
     virtual bool getMinDMap(Index& index) = 0;
 
+    // ---- debug ----
+
+    virtual bool debugFunc() = 0;
 };
 
 } // namespace RSOM

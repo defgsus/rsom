@@ -133,7 +133,7 @@ void compareDMap()
     Messure time;
     double cpu_time = 1;
 //               |  32x  32x  16         21105.3     73806.1   3.91939x
-    std::cout << "         size  |       cpu fps |  cuda fps | speed-up\n";
+    std::cout << "         size  |      cpu mops | cuda mops | speed-up\n";
 
     for (auto s=sizes.begin(); s!=sizes.end(); ++s)
     {
@@ -164,19 +164,23 @@ void compareDMap()
                 b->uploadMap(&map[0]);
                 b->uploadVec(&vec[0]);
 
-                int iters = std::max(2, 10000000 / cells);
+                int iters = std::max(2, 100000000 / (*s * *s * *d));
 
                 time.start();
                 for (int i=0; i<iters; ++i)
                 {
                     b->calcDMap();
+                    //b->debugFunc();
                 }
                 CHECK_CUDA( cudaThreadSynchronize(), );
 
                 double elapsed = time.elapsed();
 
+                double ops = (*s * *s * *d * iters) / elapsed;
+
                 std::cout
-                        << std::setw(12) << (int)(iters / elapsed);
+                        //<< std::setw(12) << (int)(iters / elapsed);
+                        << std::setw(12) << (int)(ops / 1000);
                 if (be==backends.begin())
                     cpu_time = elapsed;
                 else

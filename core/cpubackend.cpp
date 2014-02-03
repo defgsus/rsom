@@ -73,6 +73,8 @@ bool CpuBackend::setMemory(Index sizex_, Index sizey_, Index dim_)
     cpu_vec.resize(dim);
     cpu_dmap.resize(size);
     cpu_map.resize(size*dim);
+    cpu_debug1.resize(size);
+    cpu_debug2.resize(size);
 
     return true;
 }
@@ -166,6 +168,16 @@ bool CpuBackend::getMinDMap(Index& index)
             md = d;
         }
     }
+    return true;
+}
+
+bool CpuBackend::debugFunc()
+{
+    Float   * dst = &cpu_dmap[0],
+            * src1 = &cpu_map[0],
+            * src2 = &cpu_map[0];
+    for (Index i=0; i<size; ++i)
+        *dst ++ = *src1++ * *src2++;
     return true;
 }
 

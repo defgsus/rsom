@@ -65,6 +65,8 @@ public:
     /** return smallest dmap value in @p index. */
     bool getMinDMap(Index& index);
 
+    bool debugFunc();
+
     // ------ public MEMBER ---------
 
     Index size, sizex, sizey, dim,
@@ -77,7 +79,8 @@ public:
     /** 2d difference map */
         * dev_dmap,
     /** one vector of length CudaBackend::dim used for questions */
-        * dev_vec;
+        * dev_vec,
+        * dev_debug1, *dev_debug2;
     Index
     /** scratch space to find best match */
         * dev_idx;

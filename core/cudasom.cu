@@ -267,4 +267,31 @@ bool cudaSom_getMin(Float * dmap, Index size, Index& output,
     return true;
 }
 
+
+
+// ------------------------------- MULT ------------------------------
+
+__global__ void kernel_mult(Float * dst, Float * src1, Float * src2, Index size)
+{
+    // cell for this thread
+    const Index i = blockDim.x * blockIdx.x + threadIdx.x;
+
+    if (i<size)
+    {
+        dst[i] = src1[i] * src2[i];
+    }
+}
+
+bool cudaSom_mult(Float * dst, Float * src1, Float * src2, Index size)
+{
+    int threads = 128;
+    int blocks = (size+threads-1)/threads;
+
+    CHECK_CUDA_KERNEL(( kernel_mult<<<blocks, threads>>>(dst, src1, src2, size) ),
+                      DEBUG_CUDA("blocks="<<blocks<<", threads="<<threads); return false );
+    return true;
+}
+
+
+
 } // namespace RSOM

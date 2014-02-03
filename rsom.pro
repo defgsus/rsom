@@ -99,7 +99,7 @@ CUDA_DIR = "/usr/lib/nvidia-cuda-toolkit/"   # Path to cuda toolkit install
 
 SYSTEM_NAME = unix          # Depending on your system either 'Win32', 'x64', or 'Win64'
 SYSTEM_TYPE = 64            # '32' or '64', depending on your system
-CUDA_ARCH = sm_21           # Type of CUDA architecture, for example 'compute_10', 'compute_11', 'sm_10'
+CUDA_ARCH = sm_23           # Type of CUDA architecture, for example 'compute_10', 'compute_11', 'sm_10'
 
 # add cuda include paths
 INCLUDEPATH += $$CUDA_DIR/include

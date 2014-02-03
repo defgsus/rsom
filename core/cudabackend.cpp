@@ -35,6 +35,7 @@ bool cudaSom_compare(Float * map, Index w, Index h, Index d, Float * dmap, Float
                      Index threads);
 bool cudaSom_getMin(Float * map, Index size, Index& output,
                     Index * idxmap, Index threads, Index stride);
+bool cudaSom_mult(Float * dst, Float * src1, Float * src2, Index size);
 
 CudaBackend::CudaBackend()
     : Backend(),
@@ -87,6 +88,17 @@ bool CudaBackend::free()
         dev_idx = 0;
     }
 
+    if (dev_debug1)
+    {
+        CHECK_CUDA( cudaFree(dev_debug1), res = false; );
+        dev_idx = 0;
+    }
+    if (dev_debug2)
+    {
+        CHECK_CUDA( cudaFree(dev_debug2), res = false; );
+        dev_idx = 0;
+    }
+
     return res;
 }
 
@@ -117,6 +129,9 @@ bool CudaBackend::setMemory(Index sizex_, Index sizey_, Index dim_)
     threads_idx = std::min(1024, size);
     stride_idx = size / threads_idx;
     CHECK_CUDA( cudaMalloc((void**)&dev_idx,  threads_idx * sizeof(Index)), return false );
+
+    CHECK_CUDA( cudaMalloc((void**)&dev_debug1,  size * sizeof(Float)), return false );
+    CHECK_CUDA( cudaMalloc((void**)&dev_debug2,  size * sizeof(Float)), return false );
 
 //    DEBUG_CUDA( size << " " << dev_vec << " " << dev_dmap << " " << dev_map );
 
@@ -183,14 +198,18 @@ bool CudaBackend::set(Index x, Index y, Index rx, Index ry, Float amp)
 
 bool CudaBackend::calcDMap()
 {
-    return cudaSom_compare(dev_map, sizex, sizey, dim, dev_dmap, dev_vec, 512);
+    return cudaSom_compare(dev_map, sizex, sizey, dim, dev_dmap, dev_vec, 1024);
 }
 
 bool CudaBackend::getMinDMap(Index& index)
 {
-
     return cudaSom_getMin(dev_dmap, size, index,
                           dev_idx, threads_idx, stride_idx);
+}
+
+bool CudaBackend::debugFunc()
+{
+    return cudaSom_mult(dev_dmap, dev_map, dev_map, size);
 }
 
 } // namespace RSOM
