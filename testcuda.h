@@ -22,6 +22,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #define TESTCUDA_H
 
 #include <vector>
+#include <iomanip>
+
+#include "core/cuda_util.h"
+
 #include "core/cudabackend.h"
 #include "core/cpubackend.h"
 #include "core/som.h"
@@ -115,17 +119,89 @@ void testBackend()
     std::cout << "best match: " << idx << " = " << (idx%w) << ", " << (idx/w) << "\n";
 }
 
+void compareDMap()
+{
+    using namespace RSOM;
+
+    std::vector<Backend*>
+        backends = { new CpuBackend, new CudaBackend };
+
+    std::vector<Index>
+        sizes = { 32, 64, 128, 256, 512, 1024 },
+        dims = { 8, 16, 128, 256, 1024 };
+
+    Messure time;
+    double cpu_time = 1;
+//               |  32x  32x  16         21105.3     73806.1   3.91939x
+    std::cout << "         size  |       cpu fps |  cuda fps | speed-up\n";
+
+    for (auto s=sizes.begin(); s!=sizes.end(); ++s)
+    {
+        for (auto d=dims.begin(); d!=dims.end(); ++d)
+        {
+            // print size
+            std::cout
+                    << std::setw(4) << *s << "x" << std::setw(4) << *s
+                    << "x" << std::setw(4) << *d
+                    << "    ";
+            std::cout.flush();
+
+            // create some data
+            int cells = *s * *s * *d;
+
+            std::vector<Float> map(cells);
+            for (int i=0; i<cells; ++i)
+                map[i] = (Float)rand()/RAND_MAX;
+
+            std::vector<Float> vec(*d);
+            for (int i=0; i<*d; ++i)
+                vec[i] = (Float)rand()/RAND_MAX;
+
+            for (auto be=backends.begin(); be!=backends.end(); ++be)
+            {
+                Backend * b = *be;
+                b->setMemory(*s, *s, *d);
+                b->uploadMap(&map[0]);
+                b->uploadVec(&vec[0]);
+
+                int iters = std::max(2, 10000000 / cells);
+
+                time.start();
+                for (int i=0; i<iters; ++i)
+                {
+                    b->calcDMap();
+                }
+                CHECK_CUDA( cudaThreadSynchronize(), );
+
+                double elapsed = time.elapsed();
+
+                std::cout
+                        << std::setw(12) << (int)(iters / elapsed);
+                if (be==backends.begin())
+                    cpu_time = elapsed;
+                else
+                    std::cout << "   " << (cpu_time / elapsed) << "x";
+
+                std::cout.flush();
+            }
+            std::cout << "\n";
+        }
+    }
+}
+
+
 int testCuda()
 {
     using namespace RSOM;
 
-    testBackend<CudaBackend>(); return 0;
+    //testBackend<CudaBackend>(); return 0;
+    compareDMap(); return 0;
 
     CpuBackend cuda;
 
     const Index
-        w = 512,
-        h = 512,
+        w = 32,
+        h = 32,
         dim = 64;
 
     std::vector<Float>

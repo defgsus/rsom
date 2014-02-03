@@ -637,7 +637,7 @@ void ProjectView::checkWidgets_()
 
 bool ProjectView::loadData(/*const std::string& fn*/)
 {
-    project_->data().createRandomData(1000, 32);
+    project_->data().createRandomData(100000, 64);
     dataview_->setData(&project_->data());
     somview_->setSom(&project_->som());
     if (som_run_->v_bool[0])

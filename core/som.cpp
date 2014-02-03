@@ -304,13 +304,29 @@ void Som::moveData(DataIndex * data, Index index)
 
 // ------------------ matching ----------------------
 
+Index Som::lowest_(const Float * v, Index size) const
+{
+    Index r = 0;
+    Float m = *v++;
+    for (Index i=1; i<size; ++i, ++v)
+    {
+        if (*v < m)
+        {
+            m = *v;
+            r = i;
+        }
+    }
+    return r;
+}
+
 Index Som::best_match_(DataIndex * data)
 {
     Index index = 0;
     backend_->uploadVec(data->data);
     backend_->calcDMap();
-    backend_->getMinDMap(index);
-
+    //backend_->downloadDMap(&umap_[0]);
+    //backend_->getMinDMap(index);
+    //index = lowest_(&umap_[0], size_);
     moveData(data, index);
 
     return index;
@@ -434,6 +450,8 @@ Index Som::best_match_avoid_(DataIndex * data)
 
 Index Som::best_match(const float* dat)
 {
+    std::cout << "best_match not implemented\n";
+    exit(-1);
     Index index = 0;
     backend_->uploadVec(dat);
     backend_->calcDMap();

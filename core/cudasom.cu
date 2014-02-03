@@ -88,10 +88,11 @@ bool cudaSom_set(Float * map, Float * vec, Index mapw, Index maph, Index dim,
             threads(std::min(threads_sqrt,bxs), std::min(threads_sqrt,bys)),
             blocks((bxs+threads.x-1)/threads.x, (bys+threads.y-1)/threads.y);
 
-    CHECK_CUDA_KERNEL(( kernel_set<<<blocks, threads>>>(map, vec, mapw, maph, dim,
-                                                        bxs,bys,
-                                                        brx*2+1, bry*2+1, bxo,byo,
-                                                        bx,by,amp) ), return false );
+    CHECK_CUDA_KERNEL((
+            kernel_set<<<blocks, threads>>>(map, vec, mapw, maph, dim,
+                                            bxs,bys,
+                                            brx*2+1, bry*2+1, bxo,byo,
+                                            bx,by,amp) ), return false );
 
     return true;
 }
@@ -185,7 +186,8 @@ __global__ void kernel_reduce_min(Index * minindex, Float *dmap, Index size, Ind
     }
 }
 
-__global__ void kernel_get_min(Index * minindex, Float * dmap, Index size)
+/** determine least index in minindex */
+__global__ void kernel_get_min_index(Index * minindex, Float * dmap, Index size)
 {
     Index m = 0;
     Float d = dmap[minindex[0]];
@@ -202,6 +204,23 @@ __global__ void kernel_get_min(Index * minindex, Float * dmap, Index size)
     minindex[0] = m;
 }
 
+/** determine index to least value in dmap, store in minindex */
+__global__ void kernel_get_min(Index * minindex, Float * dmap, Index size)
+{
+    Index m = 0;
+    Float d = dmap[0];
+    for (Index i = 1; i<size; ++i)
+    {
+        Float d1 = dmap[i];
+        if (d1 < d)
+        {
+            m = i;
+            d = d1;
+        }
+    }
+    minindex[0] = m;
+}
+
 /** Searches for the minimum value in dmap.
     @p size is the size of @p dmap, e.g. width * height.
     @p idxmap is a scratch area that needs to be allocated to size / threads ints.
@@ -210,21 +229,40 @@ __global__ void kernel_get_min(Index * minindex, Float * dmap, Index size)
 bool cudaSom_getMin(Float * dmap, Index size, Index& output,
                     Index * idxmap, Index threads, Index stride)
 {
-    // clear idxmap
-    CHECK_CUDA( cudaMemset(idxmap, 0, threads * sizeof(Index)), return false );
+    //std::cout << "cudaSom_getMin: size="<<size<<" theads="<<threads<<" stride="<<stride<<"\n";
 
     // reduce
-    CHECK_CUDA_KERNEL((
-        kernel_reduce_min<<<stride, threads>>>(idxmap, dmap, size, stride)
-            ), return false );
+    if (stride > 1)
+    {
+        // clear idxmap
+        CHECK_CUDA( cudaMemset(idxmap, 0, threads * sizeof(Index)), return false );
 
-    // get min in reduced map
-    CHECK_CUDA_KERNEL((
-        kernel_get_min<<<1, 1>>>(idxmap, dmap, stride)
-            ), return false );
+        // reduce
+        CHECK_CUDA_KERNEL((
+            kernel_reduce_min<<<stride, threads>>>(idxmap, dmap, size, stride)
+                ), return false );
 
-    // get the first entry
+        // get min in reduced map
+        CHECK_CUDA_KERNEL((
+            kernel_get_min_index<<<1, 1>>>(idxmap, dmap, stride)
+                ), return false );
+    }
+    // or simply walk through
+    else
+    {
+        CHECK_CUDA_KERNEL((
+            kernel_get_min<<<1, 1>>>(idxmap, dmap, size)
+                ), return false );
+    }
+
+    // get the first entry of index map
     CHECK_CUDA( cudaMemcpy(&output, idxmap, sizeof(Index), cudaMemcpyDeviceToHost), return false );
+
+    /* // debug output of index map
+    Index imap[size];
+    CHECK_CUDA( cudaMemcpy(imap, idxmap, size / threads * sizeof(Index), cudaMemcpyDeviceToHost), return false );
+    for (int i=0; i<size/threads; ++i)
+        std::cout << " " << imap[i] << "\n";*/
 
     return true;
 }

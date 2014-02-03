@@ -188,6 +188,8 @@ private:
 
     // ---------- data matching ---------------
 
+    Index lowest_(const Float * v, Index size) const;
+
     /** Returns the index of the best matching cell for the Data,
         according to current strategy. */
     Index best_match_(DataIndex * data);

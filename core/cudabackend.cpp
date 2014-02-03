@@ -114,7 +114,7 @@ bool CudaBackend::setMemory(Index sizex_, Index sizey_, Index dim_)
     // som map
     CHECK_CUDA( cudaMalloc((void**)&dev_map,  size * dim * sizeof(Float)), return false );
 
-    threads_idx = 1024;
+    threads_idx = std::min(1024, size);
     stride_idx = size / threads_idx;
     CHECK_CUDA( cudaMalloc((void**)&dev_idx,  threads_idx * sizeof(Index)), return false );
 
