@@ -30,8 +30,10 @@ namespace RSOM {
 class CudaBackend : public Backend
 {
 public:
-    CudaBackend();
+    CudaBackend(Index max_threads);
     ~CudaBackend();
+
+    std::string name() const;
 
     /** free device memory, if any */
     bool free();
@@ -79,11 +81,14 @@ public:
     /** 2d difference map */
         * dev_dmap,
     /** one vector of length CudaBackend::dim used for questions */
-        * dev_vec,
-        * dev_debug1, *dev_debug2;
+        * dev_vec;
     Index
     /** scratch space to find best match */
         * dev_idx;
+
+    /** maximum number of threads.
+        @todo this probably is more complicated. */
+    Index max_threads;
 
 };
 

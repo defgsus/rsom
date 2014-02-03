@@ -21,6 +21,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #ifndef BACKEND_H
 #define BACKEND_H
 
+#include <string>
+
 #include "som_types.h"
 
 namespace RSOM {
@@ -31,6 +33,9 @@ class Backend
 public:
     Backend() { }
     virtual ~Backend() { }
+
+    /** descriptive runtime name */
+    virtual std::string name() const = 0;
 
     /** sets parameters and inits additional memory.
         @return success. */

@@ -20,6 +20,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include "cudabackend.h"
 
+#include <sstream>
+
 #include "log.h"
 #include "cuda_util.h"
 
@@ -37,7 +39,7 @@ bool cudaSom_getMin(Float * map, Index size, Index& output,
                     Index * idxmap, Index threads, Index stride);
 bool cudaSom_mult(Float * dst, Float * src1, Float * src2, Index size);
 
-CudaBackend::CudaBackend()
+CudaBackend::CudaBackend(Index max_threads)
     : Backend(),
       size(0),
       sizex(0),
@@ -46,13 +48,21 @@ CudaBackend::CudaBackend()
       dev_map(0),
       dev_dmap(0),
       dev_vec(0),
-      dev_idx(0)
+      dev_idx(0),
+      max_threads(max_threads)
 {
 }
 
 CudaBackend::~CudaBackend()
 {
     free();
+}
+
+std::string CudaBackend::name() const
+{
+    std::stringstream s;
+    s << "cuda" << max_threads;
+    return s.str();
 }
 
 bool CudaBackend::free()
@@ -88,17 +98,6 @@ bool CudaBackend::free()
         dev_idx = 0;
     }
 
-    if (dev_debug1)
-    {
-        CHECK_CUDA( cudaFree(dev_debug1), res = false; );
-        dev_idx = 0;
-    }
-    if (dev_debug2)
-    {
-        CHECK_CUDA( cudaFree(dev_debug2), res = false; );
-        dev_idx = 0;
-    }
-
     return res;
 }
 
@@ -126,12 +125,9 @@ bool CudaBackend::setMemory(Index sizex_, Index sizey_, Index dim_)
     // som map
     CHECK_CUDA( cudaMalloc((void**)&dev_map,  size * dim * sizeof(Float)), return false );
 
-    threads_idx = std::min(1024, size);
+    threads_idx = std::min(max_threads, size);
     stride_idx = size / threads_idx;
     CHECK_CUDA( cudaMalloc((void**)&dev_idx,  threads_idx * sizeof(Index)), return false );
-
-    CHECK_CUDA( cudaMalloc((void**)&dev_debug1,  size * sizeof(Float)), return false );
-    CHECK_CUDA( cudaMalloc((void**)&dev_debug2,  size * sizeof(Float)), return false );
 
 //    DEBUG_CUDA( size << " " << dev_vec << " " << dev_dmap << " " << dev_map );
 
@@ -198,7 +194,7 @@ bool CudaBackend::set(Index x, Index y, Index rx, Index ry, Float amp)
 
 bool CudaBackend::calcDMap()
 {
-    return cudaSom_compare(dev_map, sizex, sizey, dim, dev_dmap, dev_vec, 256);
+    return cudaSom_compare(dev_map, sizex, sizey, dim, dev_dmap, dev_vec, max_threads);
 }
 
 bool CudaBackend::getMinDMap(Index& index)

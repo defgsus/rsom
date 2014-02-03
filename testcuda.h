@@ -124,18 +124,25 @@ void compareDMap()
     using namespace RSOM;
 
     std::vector<Backend*>
-        backends = { new CpuBackend, new CudaBackend };
+            backends = { new CpuBackend, new CudaBackend(128), new CudaBackend(256) };
 
     std::vector<Index>
         sizes = { 32, 64, 128, 256, 512, 1024 },
         //dims = { 8, 16, 128, 256, 1024 };
         dims = { 1 };
 
+
+    // header line
+
+    std::cout << "          size ";
+    for (size_t i=0; i<backends.size(); ++i)
+    {
+        std::cout << "|" << std::setw(17) << backends[i]->name() + " mops" << " ";
+    }
+    std::cout << "\n";
+
     Messure time;
     double cpu_time = 1;
-//               |  32x  32x  16         21105.3     73806.1   3.91939x
-    std::cout << "         size  |      cpu mops | cuda mops | speed-up\n";
-
     for (auto s=sizes.begin(); s!=sizes.end(); ++s)
     {
         for (auto d=dims.begin(); d!=dims.end(); ++d)
@@ -144,7 +151,7 @@ void compareDMap()
             std::cout
                     << std::setw(4) << *s << "x" << std::setw(4) << *s
                     << "x" << std::setw(4) << *d
-                    << "    ";
+                    << " ";
             std::cout.flush();
 
             // create some data
@@ -182,12 +189,17 @@ void compareDMap()
                 double ops = (numOps * iters) / elapsed;
 
                 std::cout
+                        << "|"
                         //<< std::setw(12) << (int)(iters / elapsed);
-                        << std::setw(12) << (int)(ops / 1000);
+                        << std::setw(10) << (int)(ops / 1000)
+                        << " ";
                 if (be==backends.begin())
+                {
+                    std::cout << "    -- ";
                     cpu_time = elapsed;
+                }
                 else
-                    std::cout << "   " << (cpu_time / elapsed) << "x";
+                    std::cout << std::setw(5) << std::setprecision(3) << (cpu_time / elapsed) << "x ";
 
                 std::cout.flush();
             }

@@ -36,6 +36,8 @@ public:
     CpuBackend();
     ~CpuBackend();
 
+    std::string name() const { return "cpu"; }
+
     /** free memory, if any */
     bool free();
 
