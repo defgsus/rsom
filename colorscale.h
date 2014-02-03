@@ -41,7 +41,7 @@ struct ColorScale
     QColor get(const float f) const;
 
     /** Gets a color from a number of vectors */
-    QColor get_spectral(const float * f, size_t num, float amp = 1.f) const;
+    QColor get_spectral(const float * f, size_t num, float amp = 1.f, size_t stride = 1) const;
 };
 
 

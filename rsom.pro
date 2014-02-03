@@ -24,7 +24,7 @@ QMAKE_CXXFLAGS_RELEASE += -O2 -DNDEBUG
 windows: LIBS += -lsndfile-1
 else:    LIBS += -lsndfile
 
-CUDA_LIBS = -lcuda -lcudart
+CUDA_LIBS = -lcuda -lcudart -lcublas
 
 # -- files --
 
@@ -95,13 +95,13 @@ OTHER_FILES += $$CUDA_SOURCES
 NVCC_OPTIONS = --use_fast_math
 
 
-#CUDA_SDK = "/usr/lib/nvidia-cuda-toolkit/"   # Path to cuda SDK install
-#CUDA_DIR = "/usr/lib/nvidia-cuda-toolkit/"   # Path to cuda toolkit install
-CUDA_SDK = "/usr/local/cuda/"   # Path to cuda SDK install
-CUDA_DIR = "/usr/local/cuda/"   # Path to cuda toolkit install
+CUDA_SDK = "/usr/lib/nvidia-cuda-toolkit/"   # Path to cuda SDK install
+CUDA_DIR = "/usr/lib/nvidia-cuda-toolkit/"   # Path to cuda toolkit install
+#CUDA_SDK = "/usr/local/cuda/"   # Path to cuda SDK install
+#CUDA_DIR = "/usr/local/cuda/"   # Path to cuda toolkit install
 
 SYSTEM_NAME = unix          # Depending on your system either 'Win32', 'x64', or 'Win64'
-SYSTEM_TYPE = 32            # '32' or '64', depending on your system
+SYSTEM_TYPE = 64            # '32' or '64', depending on your system
 CUDA_ARCH = sm_20           # Type of CUDA architecture, for example 'compute_10', 'compute_11', 'sm_10'
 
 # add cuda include paths

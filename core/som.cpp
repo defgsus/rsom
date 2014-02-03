@@ -146,7 +146,7 @@ void Som::initMap()
                 const Index index = std::max(0, std::min((Index)samples_.size()-1,
                         dat + (rand()%20) - 10
                     ));
-                map_[i*dim_+j] = samples_[index].data[j] * amp;
+                map_[j*size_+i] = samples_[index].data[j] * amp;
             }
         }
     }
@@ -324,8 +324,8 @@ Index Som::best_match_(DataIndex * data)
     Index index = 0;
     backend_->uploadVec(data->data);
     backend_->calcDMap();
+    backend_->getMinDMap(index);
     //backend_->downloadDMap(&umap_[0]);
-    //backend_->getMinDMap(index);
     //index = lowest_(&umap_[0], size_);
     moveData(data, index);
 
