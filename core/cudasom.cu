@@ -122,6 +122,33 @@ __global__ void kernel_compare(Float * map, Float * dmap, Float * vec, Index siz
     }
 }
 
+__global__ void kernel_compare_shared(Float * map, Float * dmap, Float * vec, Index size, Index dim)
+{
+    // cell for this thread
+    const Index i = blockDim.x * blockIdx.x + threadIdx.x;
+
+
+    __shared__ Float svec[1024];
+    if (i<dim)
+        svec[i] = vec[i];
+    __syncthreads();
+
+    if (i<size)
+    {
+        Float * cell = &map[i * dim];
+
+        // step through dimensions of cell
+        Float d = 0;
+        for (Index j=0; j<dim; ++j)
+        {
+            d += fabsf(svec[j] - cell[j]);
+        }
+
+        // store result
+        dmap[i] = d / dim;
+    }
+}
+
 /** compare each cell in map with vector @p vec.
     Store difference of each cell in @p dmap. */
 bool cudaSom_compare(Float * map, Index w, Index h, Index dim, Float * dmap, Float * vec,

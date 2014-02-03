@@ -136,8 +136,8 @@ void compareDMap()
         sizes = { 32, 64, 128, 256, 374, 512, 768, 1024
                   , 2048, 4096
                 },
-        //dims = { 8, 16, 128, 256, 512 };
-        dims = { 1 };
+        dims = { 8, 16, 128, 256, 512 };
+        //dims = { 1 };
 
 
     // header line
@@ -147,7 +147,7 @@ void compareDMap()
     {
         std::cout << "|" << std::setw(17) << backends[i]->name() + " mops" << " ";
     }
-    std::cout << "\n";
+    std::cout << "| best\n";
 
     Messure time;
     double cpu_time = 1;
@@ -174,13 +174,14 @@ void compareDMap()
                 vec[i] = (Float)rand()/RAND_MAX;
 
             // number of operations
-            int numOps = *s * *s;// * *d;
+            int numOps = *s * *s * *d;
+
+            double elapsed, ops, best_elapsed=0;
+            int iters = 0;
 
             // test each backend
             for (auto be=backends.begin(); be!=backends.end(); ++be)
             {
-                int iters;
-                double elapsed, ops;
 
             #define BENCH_CHECK_CUDA(command__) \
                 if (!command__) { \
@@ -202,15 +203,17 @@ void compareDMap()
                 time.start();
                 for (int i=0; i<iters; ++i)
                 {
-                    //BENCH_CHECK_CUDA( b->calcDMap() );
-                    BENCH_CHECK_CUDA( b->debugFunc() );
+                    BENCH_CHECK_CUDA( b->calcDMap() );
+                    //BENCH_CHECK_CUDA( b->debugFunc() );
                 }
                 if (b->name() != "cpu") CHECK_CUDA( cudaThreadSynchronize(), );
 
                 elapsed = time.elapsed();
 
                 // free the backend resource
-                b->free();
+                BENCH_CHECK_CUDA( b->free() );
+
+            #undef BENCH_CHECK_CUDA
 
                 // print statistics
                 ops = (numOps * iters) / elapsed;
@@ -226,11 +229,21 @@ void compareDMap()
                     cpu_time = elapsed;
                 }
                 else
+                {
                     std::cout << std::setw(5) << std::setprecision(3) << (cpu_time / elapsed) << "x ";
+                    if (!best_elapsed)
+                        best_elapsed = elapsed;
+                    else
+                        best_elapsed = std::min(best_elapsed, elapsed);
+                }
             skip_:
 
                 std::cout.flush();
             }
+            // best in row
+            if (cpu_time && best_elapsed)
+                std::cout << "| " << std::setprecision(3) << (cpu_time / best_elapsed) << "x";
+
             std::cout << "\n";
         }
     }
