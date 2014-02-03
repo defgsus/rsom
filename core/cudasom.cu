@@ -22,15 +22,28 @@
 
 
 #include <cuda.h>
-#include <thrust/device_vector.h>
+//#include <thrust/device_vector.h>
+#include <cublas.h>
 
 #include "cuda_util.h"
+#include "cublas_util.h"
 #include "som_types.h"
 
 #include "cudasom.cuh"
 
 namespace RSOM
 {
+
+cublasHandle_t cublas_handle()
+{
+    static cublasHandle_t handle_ = 0;
+
+    if (!handle_)
+        CHECK_CUBLAS( cublasCreate_v2(&handle_), );
+    return handle_;
+}
+
+
 
 // ------------------------ SET --------------------------------
 
@@ -42,7 +55,8 @@ __global__ void kernel_set(Float * map, Float * vec, Index w, Index h, Index dim
 {
     const Index
             x = blockDim.x * blockIdx.x + threadIdx.x,
-            y = blockDim.y * blockIdx.y + threadIdx.y;
+            y = blockDim.y * blockIdx.y + threadIdx.y,
+            size = w*h;
 
     if (x<bw && y<bh)
     {
@@ -52,8 +66,8 @@ __global__ void kernel_set(Float * map, Float * vec, Index w, Index h, Index dim
                 d = sqrtf(dx*dx+dy*dy);
         Float amp = b_amp * max(0.f, 1.f - d);
 
-        Float * p = &map[((y+yo)*w+x+xo)*dim];
-        for (Index i=0; i<dim; ++i, ++p)
+        Float * p = &map[((y+yo)*w+x+xo)];
+        for (Index i=0; i<dim; ++i, p += size)
             *p += amp * (*vec - *p);
     }
 }
@@ -111,7 +125,7 @@ __global__ void kernel_compare(Float * map, Float * dmap, Float * vec, Index siz
 
     if (i<size)
     {
-        Float * cell = &map[i * dim];
+        //Float * cell = &map[i * dim];
 
         // step through dimensions of cell
         Float d = 0;
@@ -139,13 +153,13 @@ __global__ void kernel_compare_shared(Float * map, Float * dmap, Float * vec, In
 
     if (i<size)
     {
-        Float * cell = &map[i * dim];
+        //Float * cell = &map[i * dim];
 
         // step through dimensions of cell
         Float d = 0;
         for (Index j=0; j<dim; ++j)
         {
-            d += fabsf(svec[j] - cell[j]);
+            d += fabsf(svec[j] - map[j * size + i]);
         }
 
         // store result
@@ -262,6 +276,12 @@ bool cudaSom_getMin(Float * dmap, Index size, Index& output,
 {
     //std::cout << "cudaSom_getMin: size="<<size<<" theads="<<threads<<" stride="<<stride<<"\n";
 
+    int midx;
+    CHECK_CUBLAS( cublasIsamin_v2(cublas_handle(), size, dmap, 1, &midx), );
+    output = midx - 1;
+
+    return true;
+    /*
     // reduce
     if (stride > 1)
     {
@@ -289,13 +309,16 @@ bool cudaSom_getMin(Float * dmap, Index size, Index& output,
     // get the first entry of index map
     CHECK_CUDA( cudaMemcpy(&output, idxmap, sizeof(Index), cudaMemcpyDeviceToHost), return false );
 
-    /* // debug output of index map
+#if (0)
+    // debug output of index map
     Index imap[size];
     CHECK_CUDA( cudaMemcpy(imap, idxmap, size / threads * sizeof(Index), cudaMemcpyDeviceToHost), return false );
     for (int i=0; i<size/threads; ++i)
-        std::cout << " " << imap[i] << "\n";*/
+        std::cout << " " << imap[i] << "\n";
+#endif
 
     return true;
+    */
 }
 
 
@@ -326,7 +349,7 @@ bool cudaSom_mult(Float * dst, Float * src1, Float * src2, Index size, Index thr
 
 
 // ----------------------------- thrust ----------------------------------
-
+/*
 bool thrust_alloc(ThrustInterface ** interface, Index sizex, Index sizey, Index dim)
 {
     *interface = new ThrustInterface;
@@ -397,6 +420,6 @@ bool thrust_dmap(ThrustInterface * iface)
     }
     return true;
 }
-
+*/
 
 } // namespace RSOM

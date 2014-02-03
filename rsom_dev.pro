@@ -39,6 +39,8 @@ SOURCES += main_dev.cpp \
     core/time.cpp
 
 HEADERS += \
+    testcuda.h \
+    testsom.h \
     core/som.h \
     core/wavefile.h \
     core/write_ntf.h \
@@ -48,11 +50,11 @@ HEADERS += \
     core/scandir.h \
     core/som_types.h \
     core/cudabackend.h \
-    testcuda.h \
     core/cuda_util.h \
     core/backend.h \
     core/cpubackend.h \ 
-    core/time.h
+    core/time.h \
+    core/cublas_util.h
 
 CUDA_SOURCES = \
     core/cudasom.cuh \

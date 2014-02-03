@@ -46,6 +46,43 @@ void makeVector(std::vector<RSOM::Float>& vec, RSOM::Index index)
     }
 }
 
+void testBestmatch(RSOM::Backend * som)
+{
+    using namespace RSOM;
+
+    std::cout << "\ntest bestmatch: " << som->name() << "\n";
+
+    const Index
+        w = 512,
+        h = 512,
+        dim = 64;
+
+    std::vector<Float>
+            map(w*h*dim),
+            dmap(w*h),
+            vec(dim);
+
+    som->setMemory(w,h,dim);
+    som->uploadMap(&map[0]);
+    makeVector(vec, 0);
+    som->uploadVec(&vec[0]);
+
+    som->set(11, 11, 10, 10, 1);
+
+    som->downloadMap(&map[0]);
+    Som::printMap(&map[0], w, h, 0, 0.05);
+
+    som->calcDMap();
+    som->downloadDMap(&dmap[0]);
+    Som::printMap(&dmap[0], w, h);
+
+    Index idx;
+    som->getMinDMap(idx);
+    std::cout << "best match: " << idx << " = " << (idx%w) << ", " << (idx/w) << "\n";
+
+    delete som;
+}
+
 
 bool insertSome(RSOM::Backend * cuda, RSOM::Index w, RSOM::Index /*h*/, RSOM::Index dim, RSOM::Index numIt)
 {
@@ -85,8 +122,7 @@ bool insertSome(RSOM::Backend * cuda, RSOM::Index w, RSOM::Index /*h*/, RSOM::In
     return true;
 }
 
-template <class B>
-void testBackend()
+void testBackend(RSOM::Backend * som)
 {
     using namespace RSOM;
 
@@ -100,25 +136,30 @@ void testBackend()
             dmap(w*h),
             vec(dim);
 
-    B som;
+    som->setMemory(w,h,dim);
+    som->uploadMap(&map[0]);
 
-    som.setMemory(w,h,dim);
-    som.uploadMap(&map[0]);
+    insertSome(som, w, h, dim, 200);
 
-    insertSome(&som, w, h, dim, 2000);
-
-    som.downloadMap(&map[0]);
+    som->downloadMap(&map[0]);
 
     Som::printMap(&map[0], w, h, dim, 0.05);
 
-    som.calcDMap();
-    som.downloadDMap(&dmap[0]);
-    Som::printDMap(&dmap[0], w, h);
+    som->calcDMap();
+    som->downloadDMap(&dmap[0]);
+    Som::printMap(&dmap[0], w, h);
 
     Index idx;
-    som.getMinDMap(idx);
+    som->getMinDMap(idx);
     std::cout << "best match: " << idx << " = " << (idx%w) << ", " << (idx/w) << "\n";
+
+    delete som;
 }
+
+
+
+
+
 
 void compareDMap()
 {
@@ -256,7 +297,9 @@ int testCuda()
 {
     using namespace RSOM;
 
-    //testBackend<CudaBackend>(); return 0;
+    //testBackend(new CpuBackend); //return 0;
+    //testBackend(new CudaBackend(512)); return 0;
+    testBestmatch(new CpuBackend); testBestmatch(new CudaBackend(512)); return 0;
     compareDMap(); return 0;
 
     CpuBackend cuda;
@@ -288,7 +331,7 @@ int testCuda()
 
     cuda.calcDMap();
     cuda.downloadDMap(&dmap[0]);
-    Som::printDMap(&dmap[0], w, h);
+    Som::printMap(&dmap[0], w, h);
 
     Index idx;
     cuda.getMinDMap(idx);

@@ -26,6 +26,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #include <sstream>
 
 #include "cuda_util.h"
+#include "cublas_util.h"
 
 // XXX log.h requires c++0x
 //#include "log.h"
@@ -36,19 +37,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 #   define SOM_DEBUG(unused__) { }
 #endif
 
-/** Macro for checking for cuda errors.
-    Define CHECK_CUDA before including this header to change behaviour */
-#define CHECK_CUBLAS( command__, code_on_error__ ) \
-{ \
-    SOM_DEBUG( ":" << #command__ ); \
-    cublasStatus_t err = command__; \
-    if (err != CUBLAS_STATUS_SUCCESS) \
-    { \
-        std::cerr << "Cublas Error: " << err \
-                          << "\nfor command '" #command__ "'\n"; \
-        code_on_error__; \
-    } \
-}
 
 namespace RSOM {
 

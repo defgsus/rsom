@@ -109,11 +109,7 @@ class Som
 
     // ------------ debug ------------
 
-    static void printMap(const Float * map, Index w, Index h, Index dim,
-                         Float threshold=0.5,
-                         Index screen_w = 80, Index screen_h = 20);
-
-    static void printDMap(const Float * map, Index w, Index h,
+    static void printMap(const Float * map, Index w, Index h, Index dim_offset = 0,
                          Float threshold=0.5,
                          Index screen_w = 80, Index screen_h = 20);
 

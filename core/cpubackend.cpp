@@ -136,8 +136,8 @@ bool CpuBackend::set(Index x, Index y, Index rx, Index ry, Float amp)
             if (a<=0) continue;
 
             // adjust whole vector at this cell
-            Float * p = &cpu_map[(j*sizex+i)*dim];
-            for (Index k=0; k<dim; ++k, ++p)
+            Float * p = &cpu_map[j*sizex+i];
+            for (Index k=0; k<dim; ++k, p += size)
                 *p += a * (cpu_vec[k] - *p);
         }
     }
@@ -149,14 +149,14 @@ bool CpuBackend::calcDMap()
     // for each cell
     for (Index i=0; i<size; ++i)
     {
-        Float * p = &cpu_map[i*dim];
+        Float * p = &cpu_map[i];
 
         // get difference between cpu_vec and cell
         Float d = 0;
-        for (Index k=0; k<dim; ++k, ++p)
+        for (Index k=0; k<dim; ++k, p += size)
             d += fabsf(cpu_vec[k] - *p);
 
-        cpu_dmap[i] = d;
+        cpu_dmap[i] = d / dim;
     }
     return true;
 }

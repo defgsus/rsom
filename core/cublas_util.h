@@ -17,38 +17,30 @@ along with this software; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
+#ifndef CUBLAS_UTIL_H
+#define CUBLAS_UTIL_H
 
-#ifndef TESTSOM_H
-#define TESTSOM_H
+#include <iostream>
 
-#include "core/som.h"
-#include "core/data.h"
+#if (0)
+    #define CUBLAS_PRINT(arg__) \
+        { std::cerr << arg__ << "\n"; }
+#else
+    #define CUBLAS_PRINT(unused__)
+#endif
 
-
-int testSom()
-{
-    using namespace RSOM;
-
-    const Index dim = 64;
-
-    Data data;
-    data.createRandomData(1000, dim);
-
-    Som som(Som::CUDA);
-    som.create(32, 32, dim, 1);
-    som.setData(&data);
-    som.initMap();
-
-    std::cout << som.info_str() << "\n";
-
-    for (int i=0; i<10000; ++i)
-        som.insert();
-
-    som.printMap(som.getMap(), som.sizex(), som.sizey(), som.dim(), 0.5, 32,32);
-
-    std::cout << som.info_str() << "\n";
-
-    return 0;
+/** Macro for checking for cuda errors.
+    Define CHECK_CUDA before including this header to change behaviour */
+#define CHECK_CUBLAS( command__, code_on_error__ ) \
+{ \
+    CUBLAS_PRINT( ":" << #command__ ); \
+    cublasStatus_t err = command__; \
+    if (err != CUBLAS_STATUS_SUCCESS) \
+    { \
+        std::cerr << "Cublas Error: " << err \
+                          << "\nfor command '" #command__ "'\n"; \
+        code_on_error__; \
+    } \
 }
 
-#endif // TESTSOM_H
+#endif // CUBLAS_UTIL_H
