@@ -257,7 +257,7 @@ void benchmarkBestmatch()
     {
         int numOperations() const { return w * h * numIterations(); }
 
-        int numIterations() const { return std::max(2, 10000000 / (w*h)); }
+        int numIterations() const { return std::min(3000, std::max(2, 10000000 / (w*h))); }
 
         bool work()
         {
@@ -274,11 +274,7 @@ void benchmarkBestmatch()
 
     benchmark<WorkBestmatch>(
                         { new CpuBackend,
-                          new CudaBackend(64),
-                          new CudaBackend(128),
-                          new CudaBackend(256),
-                          new CudaBackend(512),
-                          new CudaBackend(1024)
+                          new CudaBackend(256)
                           //,new CublasBackend()
                         },
                         // sizes

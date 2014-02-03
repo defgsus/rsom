@@ -28,10 +28,10 @@
 
 int main(int , char **)
 {
-    //RSOM::benchmarkAll(); return 0;
+    RSOM::benchmarkAll(); return 0;
     //RSOM::benchmarkDmap(); return 0;
     //RSOM::benchmarkInsert(); return 0;
-    RSOM::benchmarkBestmatch(); return 0;
+    //RSOM::benchmarkBestmatch(); return 0;
 
     //return testCuda();
     //return testSom();
