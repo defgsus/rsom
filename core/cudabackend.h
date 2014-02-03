@@ -27,7 +27,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 namespace RSOM {
 
-struct ThrustInterface;
 
 /** Cuda backend for SOM class. */
 class CudaBackend : public Backend
@@ -88,9 +87,6 @@ public:
     Index
     /** scratch space to find best match */
         * dev_idx;
-
-    ThrustInterface *
-        thrust_interface;
 
     /** maximum number of threads.
         @todo this probably is more complicated. */

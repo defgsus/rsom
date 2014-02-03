@@ -22,8 +22,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 #include <sstream>
 
-//#include <thrust/device_vector.h>
-
 #include "log.h"
 #include "cuda_util.h"
 
@@ -41,9 +39,6 @@ bool cudaSom_getMin(Float * map, Index size, Index& output,
                     Index * idxmap, Index threads, Index stride);
 bool cudaSom_mult(Float * dst, Float * src1, Float * src2, Index size, Index threads);
 
-bool thrust_alloc(ThrustInterface ** iface, Index sizex, Index sizey, Index dim);
-bool thrust_free(ThrustInterface ** iface);
-bool thrust_dmap(ThrustInterface * iface);
 
 CudaBackend::CudaBackend(Index max_threads)
     : Backend(),
@@ -104,10 +99,6 @@ bool CudaBackend::free()
         dev_idx = 0;
     }
 
-    if (thrust_interface)
-    {
-        //thrust_free(&thrust_interface);
-    }
     return res;
 }
 

@@ -30,13 +30,13 @@ SOURCES += main_dev.cpp \
     core/write_ntf.cpp \
     core/project.cpp \
     core/wavefile.cpp \
-    core/som.cpp \
     core/log.cpp \
+    core/time.cpp \
     core/data.cpp \
-    core/cudabackend.cpp \
+    core/som.cpp \
     core/backend.cpp \
-    core/cpubackend.cpp \
-    core/time.cpp
+    core/cudabackend.cpp \
+    core/cpubackend.cpp
 
 HEADERS += \
     testcuda.h \
@@ -47,21 +47,18 @@ HEADERS += \
     core/write_ntf.h \
     core/project.h \
     core/log.h \
-    core/data.h \
+    core/time.h \
     core/scandir.h \
+    core/data.h \
     core/som_types.h \
-    core/cudabackend.h \
     core/cuda_util.h \
+    core/cublas_util.h \
     core/backend.h \
     core/cpubackend.h \ 
-    core/time.h \
-    core/cublas_util.h
+    core/cudabackend.h
 
 CUDA_SOURCES = \
-    core/cudasom.cuh \
-    core/cudasom.cu \
-    core/cublasbackend.h \
-    core/cublasbackend.cpp
+    core/cudasom.cu
 
 
 RESOURCES += \
