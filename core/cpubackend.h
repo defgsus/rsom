@@ -38,12 +38,12 @@ public:
 
     std::string name() const { return "cpu"; }
 
-    /** free memory, if any */
-    bool free();
-
     /** sets parameters and inits device memory.
         @return success. */
     bool setMemory(Index sizex, Index sizey, Index dim);
+
+    /** free memory, if any */
+    bool free();
 
     // --- upload data ---
 
@@ -82,8 +82,7 @@ public:
     /** 2d difference map */
         cpu_dmap,
     /** one vector of length CudaBackend::dim used for questions */
-        cpu_vec,
-        cpu_debug1,cpu_debug2;
+        cpu_vec;
 };
 
 

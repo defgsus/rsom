@@ -48,9 +48,9 @@ bool CpuBackend::free()
     size =
     dim = 0;
 
-    cpu_map.resize(0);
-    cpu_dmap.resize(0);
-    cpu_vec.resize(0);
+    { std::vector<Float> tmp; tmp.swap(cpu_map); }
+    { std::vector<Float> tmp; tmp.swap(cpu_dmap); }
+    { std::vector<Float> tmp; tmp.swap(cpu_vec); }
 
     return true;
 }
@@ -70,11 +70,17 @@ bool CpuBackend::setMemory(Index sizex_, Index sizey_, Index dim_)
 
     // --- get memory ----
 
-    cpu_vec.resize(dim);
-    cpu_dmap.resize(size);
-    cpu_map.resize(size*dim);
-    cpu_debug1.resize(size);
-    cpu_debug2.resize(size);
+    try
+    {
+        cpu_vec.resize(dim);
+        cpu_dmap.resize(size);
+        cpu_map.resize(size*dim);
+    }
+    catch (std::exception& e)
+    {
+        //std::cerr << "exception: " << e.what() << "\n";
+        return false;
+    }
 
     return true;
 }

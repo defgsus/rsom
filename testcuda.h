@@ -124,12 +124,18 @@ void compareDMap()
     using namespace RSOM;
 
     std::vector<Backend*>
-            backends = { new CpuBackend, new CudaBackend(128), new CudaBackend(256) };
+            backends = { new CpuBackend,
+                         new CudaBackend(64),
+                         new CudaBackend(128),
+                         new CudaBackend(256),
+                         new CudaBackend(512),
+                         new CudaBackend(1024)
+                       };
 
     std::vector<Index>
-        sizes = { 32, 64, 128, 256, 512, 1024 },
-        //dims = { 8, 16, 128, 256, 1024 };
-        dims = { 1 };
+        sizes = { 32, 64, 128, 256, 374, 512, 768, 1024 },
+        dims = { 8, 16, 128, 256, 512 };
+        //dims = { 1 };
 
 
     // header line
@@ -156,8 +162,6 @@ void compareDMap()
 
             // create some data
             int cells = *s * *s * *d;
-            // number of operations
-            int numOps = *s * *s;// * *d;
 
             std::vector<Float> map(cells);
             for (int i=0; i<cells; ++i)
@@ -167,25 +171,39 @@ void compareDMap()
             for (int i=0; i<*d; ++i)
                 vec[i] = (Float)rand()/RAND_MAX;
 
+            // number of operations
+            int numOps = *s * *s * *d;
+
+            // test each backend
             for (auto be=backends.begin(); be!=backends.end(); ++be)
             {
+                // allocate memory in backend
                 Backend * b = *be;
-                b->setMemory(*s, *s, *d);
+                if (!b->setMemory(*s, *s, *d))
+                {
+                    std::cout << "|" << std::setw(18) << "fail ";
+                    continue;
+                }
+                // init with some data
                 b->uploadMap(&map[0]);
                 b->uploadVec(&vec[0]);
 
-                int iters = std::max(2, 100000000 / numOps);
+                int iters = std::max(1, 100000000 / numOps);
 
                 time.start();
                 for (int i=0; i<iters; ++i)
                 {
-                    //b->calcDMap();
-                    b->debugFunc();
+                    b->calcDMap();
+                    //b->debugFunc();
                 }
                 CHECK_CUDA( cudaThreadSynchronize(), );
 
                 double elapsed = time.elapsed();
 
+                // free the backend resource
+                b->free();
+
+                // print statistics
                 double ops = (numOps * iters) / elapsed;
 
                 std::cout

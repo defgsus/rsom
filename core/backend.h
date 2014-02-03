@@ -41,6 +41,9 @@ public:
         @return success. */
     virtual bool setMemory(Index sizex, Index sizey, Index dim) = 0;
 
+    /** free allocated memory, invalidate backend */
+    virtual bool free() = 0;
+
     // --- upload data ---
 
     /** transfer map data */

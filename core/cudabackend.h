@@ -35,12 +35,12 @@ public:
 
     std::string name() const;
 
-    /** free device memory, if any */
-    bool free();
-
     /** sets parameters and inits device memory.
         @return success. */
     bool setMemory(Index sizex, Index sizey, Index dim);
+
+    /** free device memory, if any */
+    bool free();
 
     // --- upload data ---
 
