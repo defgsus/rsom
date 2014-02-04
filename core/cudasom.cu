@@ -65,7 +65,7 @@ __global__ void kernel_set(Float * map, Float * vec, Index w, Index h, Index dim
         Float amp = b_amp * max(0.f, 1.f - d);
 
         Float * p = &map[((y+yo)*w+x+xo)];
-        for (Index i=0; i<dim; ++i, p += size)
+        for (Index i=0; i<dim; ++i, p += size, ++vec)
             *p += amp * (*vec - *p);
     }
 }

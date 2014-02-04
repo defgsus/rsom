@@ -160,6 +160,8 @@ bool CudaBackend::setMemory(Index sizex_, Index sizey_, Index dim_)
     p_upload_->srcPtr = p_download_->dstPtr
             = make_cudaPitchedPtr(&map[0], sizex, sizex, sizey);
     */
+
+    CHECK_CUDA( cudaThreadSynchronize(), return false );
     return true;
 }
 
@@ -168,23 +170,27 @@ bool CudaBackend::uploadMap(const Float * map)
 {
     CHECK_CUDA( cudaMemcpy(dev_map, map, size * dim * sizeof(Float), cudaMemcpyHostToDevice), return false );
 //    CHECK_CUDA( cudaMemcpy3D(p_upload_), return false );
+    CHECK_CUDA( cudaThreadSynchronize(), return false );
     return true;
 }
 
 bool CudaBackend::uploadVec(const Float * vec)
 {
     CHECK_CUDA( cudaMemcpy(dev_vec, vec, dim * sizeof(Float), cudaMemcpyHostToDevice), return false );
+    CHECK_CUDA( cudaThreadSynchronize(), return false );
     return true;
 }
 
 bool CudaBackend::downloadMap(Float * map)
 {
+    CHECK_CUDA( cudaThreadSynchronize(), return false );
     CHECK_CUDA( cudaMemcpy(map, dev_map, size * dim * sizeof(Float), cudaMemcpyDeviceToHost), return false );
     return true;
 }
 
 bool CudaBackend::downloadDMap(Float * dmap)
 {
+    CHECK_CUDA( cudaThreadSynchronize(), return false );
     CHECK_CUDA( cudaMemcpy(dmap, dev_dmap, size * sizeof(Float), cudaMemcpyDeviceToHost), return false );
     return true;
 }
