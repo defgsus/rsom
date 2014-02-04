@@ -41,9 +41,22 @@ cublasHandle_t cublas_handle()
     return handle_;
 }
 
+// ------------------------ SET IMAP --------------------------------
 
+__global__ void kernel_set_imap(Index * imap, Index x, Index value)
+{
+    imap[x] = value;
+}
 
-// ------------------------ SET --------------------------------
+bool cudaSom_setImap(Index * imap, Index x, Index value)
+{
+    CHECK_CUDA_KERNEL((
+        kernel_set_imap<<<1,1>>>(imap, x, value)
+        ), return false );
+    return true;
+}
+
+// ------------------------ SET MAP --------------------------------
 
 __global__ void kernel_set(Float * map, Float * vec, Index w, Index h, Index dim,
                            Index bw, Index bh,
@@ -215,8 +228,21 @@ bool cudaSom_compare_window(Float * map, Index w, Index h, Index dim, Float * dm
 }
 #endif
 
-// ----------------------- GET MAX -------------------------------
+// ----------------------- GET MIN -------------------------------
 
+/** Returns in @p output, the index to the smallest value in @p dmap. */
+bool cudaSom_getMin(Float * dmap, Index size, Index& output)
+{
+    int midx;
+
+    CHECK_CUBLAS( cublasIsamin_v2(cublas_handle(), size, dmap, 1, &midx), );
+    // cublas is 1-based!!
+    output = midx - 1;
+
+    return true;
+}
+
+#ifdef OLD_EXPERIMENT_NOT_NEEDED_RIGHT_NOW
 __global__ void kernel_reduce_min(Index * minindex, Float *dmap, Index size, Index stride)
 {
     const Index tid = threadIdx.x;
@@ -247,77 +273,44 @@ __global__ void kernel_get_min_index(Index * minindex, Float * dmap, Index size)
     }
     minindex[0] = m;
 }
+#endif
 
-/** determine index to least value in dmap, store in minindex */
-__global__ void kernel_get_min(Index * minindex, Float * dmap, Index size)
+/** Determines index to least value in dmap, stores in minindex.
+    Ignores cells that are not vacant, according to @p imap. */
+__global__ void kernel_get_min(Index * minindex, Float * dmap, Index * imap, Index size)
 {
-    Index m = 0;
-    Float d = dmap[0];
-    for (Index i = 1; i<size; ++i)
+    Index index = -1;
+    Float md = 0;
+    for (Index i=0; i<size; ++i)
     {
-        Float d1 = dmap[i];
-        if (d1 < d)
+        if (imap[i]>=0)
+            continue;
+
+        Float d = dmap[i];
+        if (index<0 || d < md)
         {
-            m = i;
-            d = d1;
+            index = i;
+            md = d;
         }
     }
-    minindex[0] = m;
+    *minindex = index;
 }
 
 /** Searches for the minimum value in dmap.
     @p size is the size of @p dmap, e.g. width * height.
-    @p idxmap is a scratch area that needs to be allocated to size / threads ints.
-    @p stride must be size / threads
+    @p imap is the index map
     */
-bool cudaSom_getMin(Float * dmap, Index size, Index& output,
-                    Index * idxmap, Index threads, Index stride)
+bool cudaSom_getMinVacant(Float * dmap, Index * imap, Index size, Index& output, Index * scratch)
 {
-    //std::cout << "cudaSom_getMin: size="<<size<<" theads="<<threads<<" stride="<<stride<<"\n";
-
-    int midx;
-    CHECK_CUBLAS( cublasIsamin_v2(cublas_handle(), size, dmap, 1, &midx), );
-    output = midx - 1;
-
-    return true;
-    /*
-    // reduce
-    if (stride > 1)
-    {
-        // clear idxmap
-        CHECK_CUDA( cudaMemset(idxmap, 0, threads * sizeof(Index)), return false );
-
-        // reduce
-        CHECK_CUDA_KERNEL((
-            kernel_reduce_min<<<stride, threads>>>(idxmap, dmap, size, stride)
-                ), return false );
-
-        // get min in reduced map
-        CHECK_CUDA_KERNEL((
-            kernel_get_min_index<<<1, 1>>>(idxmap, dmap, stride)
-                ), return false );
-    }
-    // or simply walk through
-    else
-    {
-        CHECK_CUDA_KERNEL((
-            kernel_get_min<<<1, 1>>>(idxmap, dmap, size)
-                ), return false );
-    }
+    CHECK_CUDA_KERNEL((
+        kernel_get_min<<<1, 1>>>(scratch, dmap, imap, size)
+            ), return false );
 
     // get the first entry of index map
-    CHECK_CUDA( cudaMemcpy(&output, idxmap, sizeof(Index), cudaMemcpyDeviceToHost), return false );
+    CHECK_CUDA( cudaMemcpy(&output, scratch, sizeof(Index), cudaMemcpyDeviceToHost), return false );
 
-#if (0)
-    // debug output of index map
-    Index imap[size];
-    CHECK_CUDA( cudaMemcpy(imap, idxmap, size / threads * sizeof(Index), cudaMemcpyDeviceToHost), return false );
-    for (int i=0; i<size/threads; ++i)
-        std::cout << " " << imap[i] << "\n";
-#endif
 
     return true;
-    */
 }
 
 

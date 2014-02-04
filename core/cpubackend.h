@@ -49,11 +49,15 @@ public:
 
     bool uploadMap(const Float * map);
 
+    bool uploadIMap(const Index * imap);
+
     bool uploadVec(const Float * vec);
 
     // --- download data ---
 
-    bool downloadMap(Float * map);
+    bool downloadMap(Float * map, Index z = 0, Index depth = 0);
+
+    bool downloadIMap(Index * imap);
 
     bool downloadDMap(Float * dmap);
 
@@ -62,13 +66,16 @@ public:
     /** adjust the neighbourhood around x,y, with radius rx,ry, to uploaded vector. */
     bool set(Index x, Index y, Index rx, Index ry, Float amp);
 
+    /** change the @p x th value in imap to @p value. */
+    bool setIMapValue(Index x, Index value);
+
     /** Calculates the distance of each cell to the
         previously uploaded vector.
         Result can be requested via downloadDMap(). */
     bool calcDMap();
 
     /** return index to smallest dmap value in @p index. */
-    bool getMinDMap(Index& index);
+    bool getMinDMap(Index& index, bool );
 
     bool debugFunc();
 
@@ -83,6 +90,9 @@ public:
         cpu_dmap,
     /** one vector of length CudaBackend::dim used for questions */
         cpu_vec;
+    std::vector<Index>
+    /** 2d index map */
+        cpu_imap;
 };
 
 

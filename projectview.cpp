@@ -221,7 +221,7 @@ ProjectView::ProjectView(RSOM::Project * p, QWidget *parent) :
             "the result close to what <i>global search</i> does.</p>"
             "<p>To switch off <i>local search</i> set a value of 2.</p>"
             "<p>Note that this value has particularily more significance "
-            "when <b>ignore vacant cells</b> is activated.</p>";
+            "when <b>one grain per cell</b> is activated.</p>";
 
     SOM_NEW_PROPERTY(som_non_dupl_, "som_no_duplicates", "one grain per cell");
     som_non_dupl_->init(true);
@@ -305,7 +305,7 @@ ProjectView::ProjectView(RSOM::Project * p, QWidget *parent) :
             "so different representation can be choosen to display it in two dimensions.</p>"
             "<p>Be aware that changes to the <i>som</i> parameters on the right will <b>restart</b> the "
             "<i>som</i> in most cases (except <b>alpha</b>, <b>radius</b>, <b>local radius</b>, "
-            "<b>ignore vacant</b> and <b>wrap</b>).</p>";
+            "<b>one grain per cell</b> and <b>wrap</b>).</p>";
 
 
     SOM_DEBUG("ProjectView::ProjectView:: building widgets");

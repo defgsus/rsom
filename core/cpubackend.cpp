@@ -51,6 +51,7 @@ bool CpuBackend::free()
     { std::vector<Float> tmp; tmp.swap(cpu_map); }
     { std::vector<Float> tmp; tmp.swap(cpu_dmap); }
     { std::vector<Float> tmp; tmp.swap(cpu_vec); }
+    { std::vector<Index> tmp; tmp.swap(cpu_imap); }
 
     return true;
 }
@@ -74,6 +75,7 @@ bool CpuBackend::setMemory(Index sizex_, Index sizey_, Index dim_)
     {
         cpu_vec.resize(dim);
         cpu_dmap.resize(size);
+        cpu_imap.resize(size);
         cpu_map.resize(size*dim);
     }
     catch (std::exception& e)
@@ -93,6 +95,13 @@ bool CpuBackend::uploadMap(const Float * map)
     return true;
 }
 
+bool CpuBackend::uploadIMap(const Index * imap)
+{
+    for (auto i=cpu_imap.begin(); i!=cpu_imap.end(); ++i, ++imap)
+        *i = *imap;
+    return true;
+}
+
 bool CpuBackend::uploadVec(const Float * vec)
 {
     for (auto i=cpu_vec.begin(); i!=cpu_vec.end(); ++i, ++vec)
@@ -100,10 +109,24 @@ bool CpuBackend::uploadVec(const Float * vec)
     return true;
 }
 
-bool CpuBackend::downloadMap(Float * map)
+bool CpuBackend::downloadMap(Float * map, Index z, Index depth)
 {
-    for (auto i=cpu_map.begin(); i!=cpu_map.end(); ++i, ++map)
-        *map = *i;
+    if (depth == 0) depth = dim;
+    depth = std::min(dim - z, depth);
+    if (depth < 0) return false;
+
+    Float * dst = map,
+          * src = &cpu_map[z*size];
+    for (int i=0; i<size*depth; ++i)
+        *dst++ = *src++;
+
+    return true;
+}
+
+bool CpuBackend::downloadIMap(Index * imap)
+{
+    for (auto i=cpu_imap.begin(); i!=cpu_imap.end(); ++i, ++imap)
+        *imap = *i;
     return true;
 }
 
@@ -111,6 +134,13 @@ bool CpuBackend::downloadDMap(Float * dmap)
 {
     for (auto i=cpu_dmap.begin(); i!=cpu_dmap.end(); ++i, ++dmap)
         *dmap = *i;
+    return true;
+}
+
+bool CpuBackend::setIMapValue(Index x, Index value)
+{
+    if (x<0 || x>=size) return false;
+    cpu_imap[x] = value;
     return true;
 }
 
@@ -161,14 +191,17 @@ bool CpuBackend::calcDMap()
     return true;
 }
 
-bool CpuBackend::getMinDMap(Index& index)
+bool CpuBackend::getMinDMap(Index& index, bool only_vacant)
 {
-    index = 0;
-    Float md = cpu_dmap[0];
-    for (Index i=1; i<size; ++i)
+    index = -1;
+    Float md = 0;
+    for (Index i=0; i<size; ++i)
     {
+        if (only_vacant && cpu_imap[i]>=0)
+            continue;
+
         Float d = cpu_dmap[i];
-        if (d < md)
+        if (index<0 || d < md)
         {
             index = i;
             md = d;

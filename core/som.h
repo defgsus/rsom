@@ -144,8 +144,9 @@ class Som
 
     // ---------- som algorithms --------------
 
-    /** Inserts a data sample into the map according to current settings. */
-    void insert();
+    /** Inserts a data sample into the map according to current settings.
+        If @p sample_index == -1, the sample will be selected at random. */
+    void insert(Index sample_index = -1);
 
     /** move the DataIndex to map[index]. Affects Data::index and imap[] */
     void moveData(DataIndex * data, Index index);
@@ -157,16 +158,6 @@ class Som
     void local_search_radius(Float value) { local_search_radius_ = value; }
 
     // ---- matching with arbitrary samples ---
-
-    /** Finds best matching entry for data.
-        'dat' must point to 'dim' Floats */
-    Index best_match(const Float* dat);
-
-    /** Finds best matching entry for data.
-        Avoids fields who's 'imap' value is equal to or above zero.
-        'dat' must point to 'dim' Floats.
-        This function is used to assign each cell a particular grain. */
-    Index best_match_avoid(const Float* dat);
 
     // --------- map access -------------------
 
@@ -184,27 +175,11 @@ private:
 
     // ---------- data matching ---------------
 
-    Index lowest_(const Float * v, Index size) const;
-
-    /** Returns the index of the best matching cell for the Data,
-        according to current strategy. */
-    Index best_match_(DataIndex * data);
-
-    /** Returns the index of the best matching cell for the Data,
-        according to current strategy. Avoids cells that already
-        contain a data index (in imap).
-        The function returns -1, if no entry could be found. */
-    Index best_match_avoid_(DataIndex * data);
-#if (0)
-    /** Returns the distance/difference between 'data' and the map cell */
-    Float get_distance_(const DataIndex * data, Index cell_index) const;
-
-    /** Returns the distance/difference between @p vec and the specified map cell */
-    Float get_distance_(const Float * vec, Index cell_index) const;
-
-    /** Returns the distance/difference between cell i1 and i2 */
-    Float get_distance_(Index i1, Index i2) const;
-#endif
+    /** Returns the index of the best matching cell for the Data.
+        If @p only_vacant is true, this will avoids cells that are
+        already occupied by a sample index (in imap).
+        Then, the function returns -1, if no entry could be found. */
+    Index best_match_(DataIndex * data, bool only_vacant);
 
     // _______ PRIVATE MEMBER _________
 

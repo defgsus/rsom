@@ -46,16 +46,27 @@ public:
 
     // --- upload data ---
 
-    /** transfer map data */
+    /** transfer 3d som data [dim][sizey][sizex] */
     virtual bool uploadMap(const Float * map) = 0;
+
+    /** transfer index map data [sizey][sizex] */
+    virtual bool uploadIMap(const Index * imap) = 0;
 
     /** transfer question vector */
     virtual bool uploadVec(const Float * vec) = 0;
 
     // --- download data ---
 
-    /** get current map [sizey][sizex][dim] */
-    virtual bool downloadMap(Float * map) = 0;
+    /** get current map [dim][sizey][sizex].
+        If @p z and @p depth == 0, then the whole map is downloaded.
+        To download one or several slices of the map use @p z as
+        the index to the dimension and @p depth as the number of
+        slices.
+        The @p depth is alway set to the maximum when left zero (eg. dim - z). */
+    virtual bool downloadMap(Float * map, Index z = 0, Index depth = 0) = 0;
+
+    /** get current index map */
+    virtual bool downloadIMap(Index * imap) = 0;
 
     /** get current difference map */
     virtual bool downloadDMap(Float * dmap) = 0;
@@ -65,13 +76,19 @@ public:
     /** adjust the neighbourhood around x,y, with radius rx,ry, to uploaded vector. */
     virtual bool set(Index x, Index y, Index rx, Index ry, Float amp) = 0;
 
+    /** change the @p x th value in imap to @p value. */
+    virtual bool setIMapValue(Index x, Index value) = 0;
+
     /** Calculates the distance of each cell to the
         previously uploaded vector.
-        Result can be requested via downloadDMap(). */
+        Result can be requested via downloadDMap(),
+        best match can be found via getMinDMap(). */
     virtual bool calcDMap() = 0;
 
-    /** return smallest dmap value in @p index. */
-    virtual bool getMinDMap(Index& index) = 0;
+    /** Returns index to smallest dmap value in @p index.
+        If @p only_vacant is true, only empty cells are
+        selected. If there is none, -1 is returned in @p index. */
+    virtual bool getMinDMap(Index& index, bool only_vacant = false) = 0;
 
     // ---- debug ----
 

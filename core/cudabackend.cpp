@@ -35,10 +35,10 @@ bool cudaSom_set(Float * map, Float * vec, Index mapw, Index maph, Index dim,
                  Index threads_sqrt);
 bool cudaSom_compare(Float * map, Index w, Index h, Index d, Float * dmap, Float * vec,
                      Index threads);
-bool cudaSom_getMin(Float * map, Index size, Index& output,
-                    Index * idxmap, Index threads, Index stride);
+bool cudaSom_getMin(Float * dmap, Index size, Index& output);
+bool cudaSom_getMinVacant(Float * dmap, Index * imap, Index size, Index& output, Index * scratch);
 bool cudaSom_mult(Float * dst, Float * src1, Float * src2, Index size, Index threads);
-
+bool cudaSom_setImap(Index * imap, Index x, Index value);
 
 CudaBackend::CudaBackend(Index max_threads)
     : Backend(),
@@ -49,7 +49,7 @@ CudaBackend::CudaBackend(Index max_threads)
       dev_map(0),
       dev_dmap(0),
       dev_vec(0),
-      dev_idx(0),
+      dev_scratch(0),
       max_threads(max_threads)
 {
 }
@@ -87,16 +87,22 @@ bool CudaBackend::free()
         dev_dmap = 0;
     }
 
+    if (dev_imap)
+    {
+        CHECK_CUDA( cudaFree(dev_imap), res = false; );
+        dev_imap = 0;
+    }
+
     if (dev_vec)
     {
         CHECK_CUDA( cudaFree(dev_vec), res = false; );
         dev_vec = 0;
     }
 
-    if (dev_idx)
+    if (dev_scratch)
     {
-        CHECK_CUDA( cudaFree(dev_idx), res = false; );
-        dev_idx = 0;
+        CHECK_CUDA( cudaFree(dev_scratch), res = false; );
+        dev_scratch = 0;
     }
 
     return res;
@@ -123,43 +129,15 @@ bool CudaBackend::setMemory(Index sizex_, Index sizey_, Index dim_)
     // difference map
     CHECK_CUDA( cudaMalloc((void**)&dev_dmap, size * sizeof(Float)), return false );
 
+    // index map
+    CHECK_CUDA( cudaMalloc((void**)&dev_imap, size * sizeof(Index)), return false );
+
     // som map
     CHECK_CUDA( cudaMalloc((void**)&dev_map,  size * dim * sizeof(Float)), return false );
 
-    threads_idx = std::min(max_threads, size);
-    stride_idx = size / threads_idx;
-    CHECK_CUDA( cudaMalloc((void**)&dev_idx,  threads_idx * sizeof(Index)), return false );
+    // scratch space
+    CHECK_CUDA( cudaMalloc((void**)&dev_scratch, sizeof(Index)), return false );
 
-    //thrust_alloc(&thrust_interface, sizex, sizey, dim);
-
-//    DEBUG_CUDA( size << " " << dev_vec << " " << dev_dmap << " " << dev_map );
-
-    /*cudaExtent ext = make_cudaExtent(sizex, sizey, dim);
-    cudaPitchedPtr p;
-
-    CHECK_CUDA( cudaMalloc3D(&p, ext), return false );
-
-    SOM_DEBUG("CudaBackend::setMemory:: cudaMalloc3d: pitch="
-              <<p.pitch<<" ptr="<<p.ptr);
-
-    dev_map = p.ptr;
-
-
-    // setup memcpy parameters
-    p_upload_ = new cudaMemcpy3DParms;
-    p_download_ = new cudaMemcpy3DParms;
-
-    p_upload_->srcArray = p_upload_->dstArray = 0;
-    p_upload_->srcPos = p_upload_->dstPos = make_cudaPos(0,0,0);
-    p_upload_->extent = ext;
-    *p_download_ = *p_upload_;
-
-    p_upload_->kind = cudaMemcpyHostToDevice;
-    p_download_->kind = cudaMemcpyDeviceToHost;
-    p_upload_->dstPtr = p_download_->srcPtr = p;
-    p_upload_->srcPtr = p_download_->dstPtr
-            = make_cudaPitchedPtr(&map[0], sizex, sizex, sizey);
-    */
 
     CHECK_CUDA( cudaThreadSynchronize(), return false );
     return true;
@@ -174,6 +152,13 @@ bool CudaBackend::uploadMap(const Float * map)
     return true;
 }
 
+bool CudaBackend::uploadIMap(const Index * map)
+{
+    CHECK_CUDA( cudaMemcpy(dev_imap, map, size * sizeof(Index), cudaMemcpyHostToDevice), return false );
+    CHECK_CUDA( cudaThreadSynchronize(), return false );
+    return true;
+}
+
 bool CudaBackend::uploadVec(const Float * vec)
 {
     CHECK_CUDA( cudaMemcpy(dev_vec, vec, dim * sizeof(Float), cudaMemcpyHostToDevice), return false );
@@ -181,10 +166,24 @@ bool CudaBackend::uploadVec(const Float * vec)
     return true;
 }
 
-bool CudaBackend::downloadMap(Float * map)
+bool CudaBackend::downloadMap(Float * map, Index z, Index depth)
 {
     CHECK_CUDA( cudaThreadSynchronize(), return false );
-    CHECK_CUDA( cudaMemcpy(map, dev_map, size * dim * sizeof(Float), cudaMemcpyDeviceToHost), return false );
+
+    if (depth == 0) depth = dim;
+    depth = std::min(dim - z, depth);
+    if (depth < 0) return false;
+
+    CHECK_CUDA( cudaMemcpy(map, &dev_map[z*size], size * depth * sizeof(Float),
+            cudaMemcpyDeviceToHost), return false );
+
+    return true;
+}
+
+bool CudaBackend::downloadIMap(Index * map)
+{
+    CHECK_CUDA( cudaThreadSynchronize(), return false );
+    CHECK_CUDA( cudaMemcpy(map, dev_imap, size * sizeof(Index), cudaMemcpyDeviceToHost), return false );
     return true;
 }
 
@@ -193,6 +192,12 @@ bool CudaBackend::downloadDMap(Float * dmap)
     CHECK_CUDA( cudaThreadSynchronize(), return false );
     CHECK_CUDA( cudaMemcpy(dmap, dev_dmap, size * sizeof(Float), cudaMemcpyDeviceToHost), return false );
     return true;
+}
+
+bool CudaBackend::setIMapValue(Index x, Index value)
+{
+    if (x<0 || x>=size) return false;
+    return cudaSom_setImap(dev_imap, x, value);
 }
 
 bool CudaBackend::set(Index x, Index y, Index rx, Index ry, Float amp)
@@ -215,12 +220,18 @@ bool CudaBackend::calcDMap()
     return true;
 }
 
-bool CudaBackend::getMinDMap(Index& index)
+bool CudaBackend::getMinDMap(Index& index, bool only_vacant)
 {
-    if (! cudaSom_getMin(dev_dmap, size, index,
-                          dev_idx, threads_idx, stride_idx)
-        ) return false;
-
+    if (only_vacant)
+    {
+        if (! cudaSom_getMinVacant(dev_dmap, dev_imap, size, index, dev_scratch)
+            ) return false;
+    }
+    else
+    {
+        if (! cudaSom_getMin(dev_dmap, size, index)
+            ) return false;
+    }
     CHECK_CUDA( cudaThreadSynchronize(), return false );
     return true;
 }

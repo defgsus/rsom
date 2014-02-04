@@ -48,11 +48,15 @@ public:
 
     bool uploadMap(const Float * map);
 
+    bool uploadIMap(const Index * imap);
+
     bool uploadVec(const Float * vec);
 
     // --- download data ---
 
-    bool downloadMap(Float * map);
+    bool downloadMap(Float * map, Index z = 0, Index depth = 0);
+
+    bool downloadIMap(Index * imap);
 
     bool downloadDMap(Float * dmap);
 
@@ -61,21 +65,22 @@ public:
     /** adjust the neighbourhood around x,y, with radius rx,ry, to uploaded vector. */
     bool set(Index x, Index y, Index rx, Index ry, Float amp);
 
+    /** change the @p x th value in imap to @p value. */
+    bool setIMapValue(Index x, Index value);
+
     /** Calculates the distance of each cell to the
         previously uploaded vector.
         Result can be requested via downloadDMap(). */
     bool calcDMap();
 
     /** return smallest dmap value in @p index. */
-    bool getMinDMap(Index& index);
+    bool getMinDMap(Index& index, bool only_vacant = false);
 
     bool debugFunc();
 
     // ------ public MEMBER ---------
 
-    Index size, sizex, sizey, dim,
-        threads_idx,
-        stride_idx;
+    Index size, sizex, sizey, dim;
 
     Float
     /** 3d som map on device */
@@ -85,8 +90,10 @@ public:
     /** one vector of length CudaBackend::dim used for questions */
         * dev_vec;
     Index
-    /** scratch space to find best match */
-        * dev_idx;
+    /** 2d index map */
+        * dev_imap,
+    /** scratch space to have some bytes on device */
+        * dev_scratch;
 
     /** maximum number of threads.
         @todo this probably is more complicated. */
