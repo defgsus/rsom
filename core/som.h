@@ -104,8 +104,14 @@ class Som
     Float radius() const { return radius_; }
     Float local_search_radius() const { return local_search_radius_; }
 
+    bool do_non_duplicate() const { return do_non_duplicate_; }
+
     /** return a few lines of information */
     std::string info_str() const;
+
+    // ----------- setter ------------
+
+    void do_non_duplicate(bool vacant_only) { do_non_duplicate_ = vacant_only; }
 
     // ------------ debug ------------
 

@@ -527,7 +527,7 @@ ProjectView::ProjectView(RSOM::Project * p, QWidget *parent) :
         som_radius_->     cb_value_changed( [&]() { project_->set_som_radius(som_radius_->v_float[0]); } );
         som_sradius_->    cb_value_changed( [&]() { project_->set_som_search_radius(som_sradius_->v_float[0]); } );
 
-        //som_non_dupl_->   cb_value_changed( [&]() { project_->som().do_non_duplicate = som_non_dupl_->v_bool[0]; } );
+        som_non_dupl_->   cb_value_changed( [&]() { project_->som().do_non_duplicate(som_non_dupl_->v_bool[0]); } );
         //som_wrap_->       cb_value_changed( [&]() { project_->som().do_wrap = som_wrap_->v_bool[0]; } );
 
 
@@ -676,8 +676,8 @@ bool ProjectView::loadData(/*const std::string& fn*/)
     dataview_->setData(0);
     somview_->setSom(0);
 
-    //if (!project_->data().addCsvFile("/home/defgsus/prog/DATA/golstat.txt")) return false;
-    if (!project_->data().loadAsciiDir( fn.toStdString() )) return false;
+    if (!project_->data().addCsvFile("/home/defgsus/prog/DATA/golstat.txt")) return false;
+    //if (!project_->data().loadAsciiDir( fn.toStdString() )) return false;
 
 //    project_->data().normalize();
 
