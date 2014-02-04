@@ -40,6 +40,20 @@ public:
 
     Data();
 
+    // ----- config --------
+
+    /** Sets the maximum number of objects in this class.
+        This will wipe out current objects if there are more,
+        and will affect adding data in the future.
+        Set to zero for unlimited objects (default). */
+    void maxObjects(size_t num);
+
+    /** Returns the maximum allowed objects in this container.
+        Zero for unlimited. */
+    size_t maxObjects() const { return max_objects_; }
+
+    // ------ getter -------
+
     /** return number of objects */
     size_t numObjects() const { return data_.size(); }
 
@@ -61,23 +75,38 @@ public:
 
     bool addCsvFile(const std::string& filename);
 
-    // debug
+    // ----- manipulation ------
+
+    /** return the maximum value in all samples */
+    Float maxValue();
+
+    /** divide all by maxValue() */
+    void normalize();
+
+    /** clamp all values to this range. */
+    void clamp(Float minval, Float maxval);
+
+    // ------ debug ------
 
     void createRandomData(size_t numObjects, size_t numPoints);
 
-    // divide all by max_value_
-    void normalize();
-
 private:
+
+    /** called to signal data has changed. */
+    void changed_();
+
     /** contains all the data */
     std::vector<std::vector<Float>> data_;
     /** last used filepath */
     std::string filepath_;
     /** number of data points. if 0, then undecided yet. */
-    size_t num_points_;
+    size_t num_points_,
+    /** if this is != 0, it limits the maximum number of samples. */
+        max_objects_;
 
     /** maximum value in all data files */
     Float max_value_;
+    bool do_calc_maxval_;
 };
 
 } // namespace RSOM

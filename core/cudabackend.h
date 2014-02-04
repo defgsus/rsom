@@ -28,7 +28,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 namespace RSOM {
 
 
-/** Cuda backend for SOM class. */
+/** Cuda backend for SOM class.
+    See RSOM::Backend for documentation. */
 class CudaBackend : public Backend
 {
 public:
@@ -37,11 +38,8 @@ public:
 
     std::string name() const;
 
-    /** sets parameters and inits device memory.
-        @return success. */
     bool setMemory(Index sizex, Index sizey, Index dim);
 
-    /** free device memory, if any */
     bool free();
 
     // --- upload data ---
@@ -62,18 +60,12 @@ public:
 
     // --- functions ---
 
-    /** adjust the neighbourhood around x,y, with radius rx,ry, to uploaded vector. */
     bool set(Index x, Index y, Index rx, Index ry, Float amp);
 
-    /** change the @p x th value in imap to @p value. */
     bool setIMapValue(Index x, Index value);
 
-    /** Calculates the distance of each cell to the
-        previously uploaded vector.
-        Result can be requested via downloadDMap(). */
-    bool calcDMap();
+    bool calcDMap(bool only_vacant = false, Float fixed_value = 0);
 
-    /** return smallest dmap value in @p index. */
     bool getMinDMap(Index& index, bool only_vacant = false);
 
     bool debugFunc();

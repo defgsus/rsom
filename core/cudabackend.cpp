@@ -34,7 +34,7 @@ bool cudaSom_set(Float * map, Float * vec, Index mapw, Index maph, Index dim,
                  Index bw, Index bh, Index xpos, Index ypos, Float amp,
                  Index threads_sqrt);
 bool cudaSom_compare(Float * map, Index w, Index h, Index d, Float * dmap, Float * vec,
-                     Index threads);
+                     Index threads, bool only_vacant=false, Float fixed_value=0, Index * imap=0);
 bool cudaSom_getMin(Float * dmap, Index size, Index& output);
 bool cudaSom_getMinVacant(Float * dmap, Index * imap, Index size, Index& output, Index * scratch);
 bool cudaSom_mult(Float * dst, Float * src1, Float * src2, Index size, Index threads);
@@ -210,11 +210,12 @@ bool CudaBackend::set(Index x, Index y, Index rx, Index ry, Float amp)
     return true;
 }
 
-bool CudaBackend::calcDMap()
+bool CudaBackend::calcDMap(bool only_vacant, Float fixed_value)
 {
-    if (! cudaSom_compare(dev_map, sizex, sizey, dim, dev_dmap, dev_vec, max_threads)
+    if (! cudaSom_compare(
+                dev_map, sizex, sizey, dim, dev_dmap, dev_vec, max_threads,
+                only_vacant, fixed_value, dev_imap)
         ) return false;
-    //return thrust_dmap(thrust_interface);
 
     CHECK_CUDA( cudaThreadSynchronize(), return false );
     return true;

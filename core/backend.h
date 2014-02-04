@@ -82,8 +82,10 @@ public:
     /** Calculates the distance of each cell to the
         previously uploaded vector.
         Result can be requested via downloadDMap(),
-        best match can be found via getMinDMap(). */
-    virtual bool calcDMap() = 0;
+        best match can be found via getMinDMap().
+        If @p only_vacant is true, then only non-occupied cells
+        are evaluated and occupied cells are set to the @p fixed value. */
+    virtual bool calcDMap(bool only_vacant = false, Float fixed_value = 0) = 0;
 
     /** Returns index to smallest dmap value in @p index.
         If @p only_vacant is true, only empty cells are

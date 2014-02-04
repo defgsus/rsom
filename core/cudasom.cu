@@ -153,6 +153,31 @@ __global__ void kernel_compare(Float * map, Float * dmap, Float * vec, Index siz
     }
 }
 
+__global__ void kernel_compare_vacant(Float * map, Float * dmap, Float * vec, Index * imap,
+                                      Index size, Index dim, Float fixed_value)
+{
+    // cell for this thread
+    const Index i = blockDim.x * blockIdx.x + threadIdx.x;
+
+    if (i<size)
+    {
+        if (imap[i]>=0)
+            dmap[i] = fixed_value;
+        else
+        {
+            // step through dimensions of cell
+            Float d = 0;
+            for (Index j=0; j<dim; ++j)
+            {
+                d += fabsf(vec[j] - map[j * size + i]);
+            }
+
+            // store result
+            dmap[i] = d / dim;
+        }
+    }
+}
+
 /** only for testing. working depends on number of threads!! */
 __global__ void kernel_compare_shared(Float * map, Float * dmap, Float * vec, Index size, Index dim)
 {
@@ -182,15 +207,21 @@ __global__ void kernel_compare_shared(Float * map, Float * dmap, Float * vec, In
 /** compare each cell in map with vector @p vec.
     Store difference of each cell in @p dmap. */
 bool cudaSom_compare(Float * map, Index w, Index h, Index dim, Float * dmap, Float * vec,
-                     Index threads)
+                     Index threads, bool only_vacant = false, Float fixed_value = 0, Index * imap = 0)
 {
     int blocks = (w*h+threads-1)/threads;
 
-    CHECK_CUDA_KERNEL(( kernel_compare<<<blocks, threads>>>(map, dmap, vec, w*h, dim) ),
-                      DEBUG_CUDA("blocks="<<blocks<<", threads="<<threads); return false );
+    if (only_vacant)
+        CHECK_CUDA_KERNEL(( kernel_compare_vacant<<<blocks, threads>>>(
+                                map, dmap, vec, imap, w*h, dim, fixed_value) ),
+                  DEBUG_CUDA("blocks="<<blocks<<", threads="<<threads); return false )
+    else
+        CHECK_CUDA_KERNEL(( kernel_compare<<<blocks, threads>>>(map, dmap, vec, w*h, dim) ),
+                  DEBUG_CUDA("blocks="<<blocks<<", threads="<<threads); return false );
 
     return true;
 }
+
 
 #ifdef WINDOW_FUNCTION_TODO
 __global__ void kernel_compare_window(Float * map, Float * dmap, Float * vec, Index size, Index dim)

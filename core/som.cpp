@@ -285,8 +285,8 @@ Index Som::best_match_(DataIndex * data, bool only_vacant)
 {
     Index index = 0;
     backend_->uploadVec(data->data);
-    backend_->calcDMap();
-    backend_->getMinDMap(index, only_vacant);
+    backend_->calcDMap(only_vacant, 100000);
+    backend_->getMinDMap(index);
 
     return index;
 }

@@ -32,15 +32,32 @@ namespace RSOM
 
 
 Data::Data()
-    :   num_points_ (0),
-        max_value_  (0)
+    : num_points_ (0),
+      max_objects_(0),
+      max_value_  (0)
 {
+    changed_();
 }
 
+void Data::changed_()
+{
+    do_calc_maxval_ = true;
+}
 
+void Data::maxObjects(size_t num)
+{
+    max_objects_ = num;
+
+    if (num && data_.size() >= num)
+        data_.resize(num);
+}
 
 void Data::createRandomData(size_t numObjects, size_t numPoints)
 {
+    // limit number
+    if (max_objects_)
+        numObjects = std::min(numObjects, max_objects_);
+
     num_points_ = numPoints;
 
     int k = 0;
@@ -55,12 +72,17 @@ void Data::createRandomData(size_t numObjects, size_t numPoints)
             *p = (Float)rand() / RAND_MAX * (0.5+0.5*t);
         }
     }
+
+    changed_();
 }
 
 
 bool Data::addAsciiFile(const std::string& filename)
 {
     SOM_DEBUG("Data::addAsciFile(" << filename << ")");
+
+    if (max_objects_ && data_.size() >= max_objects_)
+        return false;
 
     std::ifstream f;
     f.open(filename, std::ios_base::in);
@@ -105,13 +127,15 @@ bool Data::addAsciiFile(const std::string& filename)
         vec->push_back((Float)0);
     }
 
-    if (local_max)
+    if (false && local_max)
     {
         for (auto i=vec->begin(); i!=vec->end(); ++i)
             *i /= local_max;
     }
 
     SOM_DEBUG("Data::addAsciiFile:: added object with " << num_points_ << " data points.");
+
+    changed_();
 
     return true;
 }
@@ -130,22 +154,64 @@ bool Data::loadAsciiDir(const std::string& pathname)
     bool res = false;
     for (auto i=scan.files.begin(); i!=scan.files.end(); ++i)
     {
+        if (max_objects_ && data_.size() == max_objects_)
+            break;
+
         res |= addAsciiFile(*i);
     }
     return res;
 }
 
+
+Float Data::maxValue()
+{
+    if (!do_calc_maxval_) return max_value_;
+    do_calc_maxval_ = false;
+
+    max_value_ = 0;
+    if (!numObjects() || !numDataPoints())
+        return 0;
+
+    max_value_ = data_[0][0];
+    for (auto o=data_.begin(); o!=data_.end(); ++o)
+    {
+        for (auto p=o->begin(); p!=o->end(); ++p)
+        {
+            max_value_ = std::max(max_value_, *p);
+        }
+    }
+
+    return max_value_;
+}
+
+void Data::clamp(Float minval, Float maxval)
+{
+    for (auto o=data_.begin(); o!=data_.end(); ++o)
+    {
+        for (auto p=o->begin(); p!=o->end(); ++p)
+        {
+            *p = std::max(minval, std::min(maxval, *p ));
+        }
+    }
+
+    changed_();
+}
+
 void Data::normalize()
 {
-    if (!max_value_) return;
+    Float max_value = maxValue();
+
+    if (!max_value) return;
 
     for (auto o=data_.begin(); o!=data_.end(); ++o)
     {
         for (auto p=o->begin(); p!=o->end(); ++p)
         {
-            *p /= max_value_;
+            *p /= max_value;
         }
     }
+
+    changed_();
 }
 
 
@@ -175,6 +241,9 @@ bool Data::addCsvFile(const std::string& filename)
     std::string str;
     while (f.good())
     {
+        if (max_objects_ && data_.size() >= max_objects_)
+            break;
+
         f >> str;
         //std::cout << "\n[" << str << "] ";
 
@@ -226,6 +295,8 @@ bool Data::addCsvFile(const std::string& filename)
 
     SOM_DEBUG("Data::addAsciiFile:: added " << data_.size()
               << " objects with " << num_points_ << " data points.");
+
+    changed_();
 
     return true;
 }

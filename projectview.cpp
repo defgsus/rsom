@@ -244,6 +244,7 @@ ProjectView::ProjectView(RSOM::Project * p, QWidget *parent) :
             "<b>wrap map operations on edges</b>"
             "<p>Operations like adjusting the neighbourhood on data inserts "
             "that would normally be clipped on edges can be wrapped around.</p>";
+    som_wrap_->setActive(false);
 
     SOM_NEW_PROPERTY(somd_dmode_, "somd_mode", "draw mode");
     somd_dmode_->init(
@@ -676,10 +677,12 @@ bool ProjectView::loadData(/*const std::string& fn*/)
     dataview_->setData(0);
     somview_->setSom(0);
 
-    if (!project_->data().addCsvFile("/home/defgsus/prog/DATA/golstat.txt")) return false;
-    //if (!project_->data().loadAsciiDir( fn.toStdString() )) return false;
+    //project_->data().maxObjects(30000);
+    //if (!project_->data().addCsvFile("/home/defgsus/prog/DATA/golstat.txt")) return false;
+    if (!project_->data().loadAsciiDir( fn.toStdString() )) return false;
 
-//    project_->data().normalize();
+    project_->data().clamp(0, 15);
+    project_->data().normalize();
 
 
     // connect data view
