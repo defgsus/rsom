@@ -560,7 +560,7 @@ ProjectView::ProjectView(RSOM::Project * p, QWidget *parent) :
 
         connect(somview_, &SomView::map_clicked, [=](size_t index)
         {
-            //dataview_->draw_object( project_->som().imap[index] );
+            dataview_->draw_object( project_->som().getIMap()[index] );
         });
 
 
@@ -639,12 +639,14 @@ void ProjectView::checkWidgets_()
 
 bool ProjectView::loadData(/*const std::string& fn*/)
 {
-    project_->data().createRandomData(100000, 64);
+#if (0)
+    project_->data().createRandomData(100000, 12);
     dataview_->setData(&project_->data());
     somview_->setSom(&project_->som());
     if (som_run_->v_bool[0])
         start_som();
     return true;
+#endif
 
     QString fn =
     #if (1)

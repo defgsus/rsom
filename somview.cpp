@@ -105,7 +105,7 @@ void SomView::paint_band_()
     {
         // spectral color from single band
         p.setBrush(QBrush(colors_.get(
-            map[band_sel_ * som_->size() + y*som_->sizex() + x])));
+            map[band_sel_ * som_->size() + y*som_->sizex() + x] * paint_mult_)));
 
         p.drawRect( (qreal)x / som_->sizex() * w + frameWidth(),
                     (qreal)y / som_->sizey() * h + frameWidth(),

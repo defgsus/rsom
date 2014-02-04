@@ -191,25 +191,42 @@ bool CudaBackend::downloadDMap(Float * dmap)
 
 bool CudaBackend::set(Index x, Index y, Index rx, Index ry, Float amp)
 {
-    return cudaSom_set(dev_map, dev_vec, sizex, sizey, dim,
-                       rx, ry, x, y, amp, 32);
+    if (! cudaSom_set(dev_map, dev_vec, sizex, sizey, dim,
+                       rx, ry, x, y, amp, 32)
+        ) return false;
+
+    CHECK_CUDA( cudaThreadSynchronize(), return false );
+    return true;
 }
 
 bool CudaBackend::calcDMap()
 {
-    return cudaSom_compare(dev_map, sizex, sizey, dim, dev_dmap, dev_vec, max_threads);
+    if (! cudaSom_compare(dev_map, sizex, sizey, dim, dev_dmap, dev_vec, max_threads)
+        ) return false;
     //return thrust_dmap(thrust_interface);
+
+    CHECK_CUDA( cudaThreadSynchronize(), return false );
+    return true;
 }
 
 bool CudaBackend::getMinDMap(Index& index)
 {
-    return cudaSom_getMin(dev_dmap, size, index,
-                          dev_idx, threads_idx, stride_idx);
+    if (! cudaSom_getMin(dev_dmap, size, index,
+                          dev_idx, threads_idx, stride_idx)
+        ) return false;
+
+    CHECK_CUDA( cudaThreadSynchronize(), return false );
+    return true;
 }
 
 bool CudaBackend::debugFunc()
 {
-    return cudaSom_mult(dev_dmap, dev_map, dev_map, size, max_threads);
+    if (! cudaSom_mult(dev_dmap, dev_map, dev_map, size, max_threads)
+        ) return false;
+
+    CHECK_CUDA( cudaThreadSynchronize(), return false );
+    return true;
+
 }
 
 } // namespace RSOM

@@ -104,7 +104,8 @@ bool cudaSom_set(Float * map, Float * vec, Index mapw, Index maph, Index dim,
 
     // set blocks/threads
     const dim3
-            threads(std::min(threads_sqrt,bxs), std::min(threads_sqrt,bys)),
+            threads(bxs < threads_sqrt? nextPow2(bxs) : threads_sqrt,
+                    bys < threads_sqrt? nextPow2(bys) : threads_sqrt),
             blocks((bxs+threads.x-1)/threads.x, (bys+threads.y-1)/threads.y);
 
     CHECK_CUDA_KERNEL((
@@ -127,8 +128,6 @@ __global__ void kernel_compare(Float * map, Float * dmap, Float * vec, Index siz
 
     if (i<size)
     {
-        //Float * cell = &map[i * dim];
-
         // step through dimensions of cell
         Float d = 0;
         for (Index j=0; j<dim; ++j)
@@ -155,8 +154,6 @@ __global__ void kernel_compare_shared(Float * map, Float * dmap, Float * vec, In
 
     if (i<size)
     {
-        //Float * cell = &map[i * dim];
-
         // step through dimensions of cell
         Float d = 0;
         for (Index j=0; j<dim; ++j)
