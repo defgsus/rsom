@@ -35,7 +35,10 @@ bool cudaSom_set(Float * map, Float * vec, Index mapw, Index maph, Index dim,
                  Index threads_sqrt);
 bool cudaSom_compare(Float * map, Index w, Index h, Index d, Float * dmap, Float * vec,
                      Index threads, bool only_vacant=false, Float fixed_value=0, Index * imap=0);
-bool cudaSom_getMin(Float * dmap, Index size, Index& output);
+bool cudaSom_compare(Float * map, Index w, Index h, Index d, Float * dmap, Float * vec,
+                     Index wx, Index wy, Index ww, Index wh,
+                     Index threads, bool only_vacant=false, Float fixed_value=0, Index * imap=0);
+bool cudaSom_getMin(Float * dmap, Index size, Index& output, Float& distance);
 bool cudaSom_getMinVacant(Float * dmap, Index * imap, Index size, Index& output, Index * scratch);
 bool cudaSom_mult(Float * dst, Float * src1, Float * src2, Index size, Index threads);
 bool cudaSom_setImap(Index * imap, Index x, Index value);
@@ -221,18 +224,26 @@ bool CudaBackend::calcDMap(bool only_vacant, Float fixed_value)
     return true;
 }
 
-bool CudaBackend::getMinDMap(Index& index, bool only_vacant)
+bool CudaBackend::calcDMap(Index x, Index y, Index w, Index h,
+                           bool only_vacant, Float fixed_value)
 {
-    if (only_vacant)
-    {
-        if (! cudaSom_getMinVacant(dev_dmap, dev_imap, size, index, dev_scratch)
-            ) return false;
-    }
-    else
-    {
-        if (! cudaSom_getMin(dev_dmap, size, index)
-            ) return false;
-    }
+    if (! cudaSom_compare(
+                dev_map, sizex, sizey, dim, dev_dmap, dev_vec,
+                x, y, w, h,
+                max_threads, only_vacant, fixed_value, dev_imap)
+        ) return false;
+
+    CHECK_CUDA( cudaThreadSynchronize(), return false );
+    return true;
+}
+
+bool CudaBackend::getMinDMap(Index& index, Float& distance, Index count)
+{
+    count = count? std::min(size, count) : size;
+
+    if (! cudaSom_getMin(dev_dmap, count, index, distance)
+        ) return false;
+
     CHECK_CUDA( cudaThreadSynchronize(), return false );
     return true;
 }

@@ -176,14 +176,29 @@ bool CpuBackend::set(Index x, Index y, Index rx, Index ry, Float amp)
 
 bool CpuBackend::calcDMap(bool only_vacant, Float fixed_value)
 {
-    // for each cell
-    for (Index i=0; i<size; ++i)
-    {
-        Float * p = &cpu_map[i];
+    return calcDMap(0,0,sizex,sizey, only_vacant, fixed_value);
+}
 
-        if (only_vacant && cpu_imap[i]>=0)
+bool CpuBackend::calcDMap(Index x, Index y, Index w, Index h,
+                          bool only_vacant, Float fixed_value)
+{
+    const Index
+            x0 = std::max(0,std::min(sizex-1, x )),
+            x1 = std::max(0,std::min(sizex-1, x + w )),
+            y0 = std::max(0,std::min(sizey-1, y )),
+            y1 = std::max(0,std::min(sizey-1, y + h ));
+
+    // for each cell
+    for (Index j=y0; j<y1; ++j)
+    for (Index i=x0; i<x1; ++i)
+    {
+        const Index idx = j * sizex + i;
+
+        Float * p = &cpu_map[idx];
+
+        if (only_vacant && cpu_imap[idx]>=0)
         {
-            cpu_dmap[i] = fixed_value;
+            cpu_dmap[idx] = fixed_value;
         }
         else
         {
@@ -198,20 +213,19 @@ bool CpuBackend::calcDMap(bool only_vacant, Float fixed_value)
     return true;
 }
 
-bool CpuBackend::getMinDMap(Index& index, bool only_vacant)
+bool CpuBackend::getMinDMap(Index& index, Float& value, Index count)
 {
-    index = -1;
-    Float md = 0;
-    for (Index i=0; i<size; ++i)
-    {
-        if (only_vacant && cpu_imap[i]>=0)
-            continue;
+    count = count? std::min(size, count) : size;
 
+    index = -1;
+    value = 0;
+    for (Index i=0; i<count; ++i)
+    {
         Float d = cpu_dmap[i];
-        if (index<0 || d < md)
+        if (index<0 || d < value)
         {
             index = i;
-            md = d;
+            value = d;
         }
     }
     return true;

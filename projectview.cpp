@@ -653,8 +653,8 @@ bool ProjectView::loadData(/*const std::string& fn*/)
     #if (1)
             // "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/rausch/radioscan_05_4.5.wav"
             // "/home/defgsus/prog/C/matrixoptimizer/data/audio/SAT/gong/metalfx01.wav"
-             "/home/defgsus/prog/starmaps/hdeltagalaxy/";
-             //"/home/defgsus/prog/starmaps/vieles/";
+             //"/home/defgsus/prog/starmaps/hdeltagalaxy/";
+             "/home/defgsus/prog/starmaps/vieles/";
     #else
         QFileDialog::getOpenFileName(this,
             "Open Sound",

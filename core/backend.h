@@ -84,13 +84,24 @@ public:
         Result can be requested via downloadDMap(),
         best match can be found via getMinDMap().
         If @p only_vacant is true, then only non-occupied cells
-        are evaluated and occupied cells are set to the @p fixed value. */
+        are evaluated, and cells that are occupied are set to
+        the @p fixed_value. */
     virtual bool calcDMap(bool only_vacant = false, Float fixed_value = 0) = 0;
 
-    /** Returns index to smallest dmap value in @p index.
-        If @p only_vacant is true, only empty cells are
-        selected. If there is none, -1 is returned in @p index. */
-    virtual bool getMinDMap(Index& index, bool only_vacant = false) = 0;
+    /** Calculates the distance of a portion of the cells to the
+        previously uploaded vector. The window in the map is given
+        by it's corner at @p x, @p y and size @p w, @p h.
+        @note For efficiency reasons, the dmap is filled linearily starting
+        at the beginning (not in the specified window).
+        So to search for the best match in a window, run getMinDMap() with
+        a count equal to the window size afterwards. */
+    virtual bool calcDMap(Index x, Index y, Index w, Index h,
+                          bool only_vacant = false, Float fixed_value = 0) = 0;
+
+    /** Returns index to smallest dmap value in @p index and the
+        value in @p value.
+        If @p count is not zero, only this many fields in dmap will be considered. */
+    virtual bool getMinDMap(Index& index, Float& value, Index count=0) = 0;
 
     // ---- debug ----
 

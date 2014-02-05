@@ -161,6 +161,9 @@ __global__ void kernel_compare_vacant(Float * map, Float * dmap, Float * vec, In
 
     if (i<size)
     {
+        /** @note this branch makes the kernel either a
+            little bit slower or a little bit faster, depending
+            on the map's occupiedness. */
         if (imap[i]>=0)
             dmap[i] = fixed_value;
         else
@@ -223,21 +226,33 @@ bool cudaSom_compare(Float * map, Index w, Index h, Index dim, Float * dmap, Flo
 }
 
 
-#ifdef WINDOW_FUNCTION_TODO
-__global__ void kernel_compare_window(Float * map, Float * dmap, Float * vec, Index size, Index dim)
+
+
+// ---------------------  COMPARE WINDOW -----------------------------
+
+/** compare 3d map @p map with vector @p vec and store in 2d map @p dmap the
+    distance between each cell and the vector.
+    @p size is width*height of map
+    @p mw is width of map
+    @p dim is number of dimensions
+    @p wx and @p wy is window position
+    @p ww is width of window
+    */
+__global__ void kernel_compare_win(Float * map, Float * dmap, Float * vec, Index size, Index mw, Index dim,
+                                   Index wx, Index wy, Index ww)
 {
     // cell for this thread
-    const Index i = blockDim.x * blockIdx.x + threadIdx.x;
+    const Index
+        i = blockDim.x * blockIdx.x + threadIdx.x,
+        idx = wx + i % ww + (i/ww) * mw;
 
     if (i<size)
     {
-        Float * cell = &map[i * dim];
-
         // step through dimensions of cell
         Float d = 0;
         for (Index j=0; j<dim; ++j)
         {
-            d += fabsf(vec[j] - cell[j]);
+            d += fabsf(vec[j] - map[j * size + idx]);
         }
 
         // store result
@@ -245,30 +260,71 @@ __global__ void kernel_compare_window(Float * map, Float * dmap, Float * vec, In
     }
 }
 
-/** compare each cell in the map window with vector @p vec.
+__global__ void kernel_compare_win_vacant(Float * map, Float * dmap, Float * vec, Index * imap,
+                                      Index size, Index mw, Index dim,
+                                      Index wx, Index wy, Index ww, Float fixed_value)
+{
+    // cell for this thread
+    const Index i = blockDim.x * blockIdx.x + threadIdx.x;
+
+    if (i<size)
+    {
+        /** @note this branch makes the kernel either a
+            little bit slower or a little bit faster, depending
+            on the map's occupiedness. */
+        if (imap[i]>=0)
+            dmap[i] = fixed_value;
+        else
+        {
+            // step through dimensions of cell
+            Float d = 0;
+            for (Index j=0; j<dim; ++j)
+            {
+                d += fabsf(vec[j] - map[j * size + i]);
+            }
+
+            // store result
+            dmap[i] = d / dim;
+        }
+    }
+}
+
+
+/** compare a window of cells in map with vector @p vec.
     Store difference of each cell in @p dmap. */
-bool cudaSom_compare_window(Float * map, Index w, Index h, Index dim, Float * dmap, Float * vec,
-                     Index threads)
+bool cudaSom_compare(Float * map, Index w, Index h, Index dim, Float * dmap, Float * vec,
+                     Index wx, Index wy, Index ww, Index wh,
+                     Index threads, bool only_vacant = false, Float fixed_value = 0, Index * imap = 0)
 {
     int blocks = (w*h+threads-1)/threads;
 
-    CHECK_CUDA_KERNEL(( kernel_compare<<<blocks, threads>>>(map, dmap, vec, w*h, dim) ),
-                      DEBUG_CUDA("blocks="<<blocks<<", threads="<<threads); return false );
+    if (only_vacant)
+        CHECK_CUDA_KERNEL(( kernel_compare_win_vacant<<<blocks, threads>>>(
+                                map, dmap, vec, imap, w*h, w, dim,
+                                wx, wy, ww, fixed_value) ),
+                  DEBUG_CUDA("blocks="<<blocks<<", threads="<<threads); return false )
+    else
+        CHECK_CUDA_KERNEL(( kernel_compare_win<<<blocks, threads>>>(map, dmap, vec, w*h, w, dim,
+                                                                wx, wy, ww) ),
+                  DEBUG_CUDA("blocks="<<blocks<<", threads="<<threads); return false );
 
     return true;
 }
-#endif
+
+
 
 // ----------------------- GET MIN -------------------------------
 
-/** Returns in @p output, the index to the smallest value in @p dmap. */
-bool cudaSom_getMin(Float * dmap, Index size, Index& output)
+/** Returns in @p index, the index to the smallest value in @p dmap.
+    Also the distance itself is returned in @p value. */
+bool cudaSom_getMin(Float * dmap, Index size, Index& index, Float& value)
 {
     int midx;
 
-    CHECK_CUBLAS( cublasIsamin_v2(cublas_handle(), size, dmap, 1, &midx), );
+    CHECK_CUBLAS( cublasIsamin_v2(cublas_handle(), size, dmap, 1, &midx), return false; );
     // cublas is 1-based!!
-    output = midx - 1;
+    index = midx - 1;
+    CHECK_CUDA( cudaMemcpy(&value, &dmap[index], sizeof(Float), cudaMemcpyDeviceToHost), return false );
 
     return true;
 }
@@ -328,6 +384,7 @@ __global__ void kernel_get_min(Index * minindex, Float * dmap, Index * imap, Ind
 }
 
 /** Searches for the minimum value in dmap.
+    @note this is not good / very slow. not used right now...
     @p size is the size of @p dmap, e.g. width * height.
     @p imap is the index map
     */

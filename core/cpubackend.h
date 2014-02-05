@@ -67,7 +67,10 @@ public:
 
     bool calcDMap(bool only_vacant = false, Float fixed_value = 0);
 
-    bool getMinDMap(Index& index, bool );
+    bool calcDMap(Index x, Index y, Index w, Index h,
+                  bool only_vacant = false, Float fixed_value = 0);
+
+    bool getMinDMap(Index& index, Float& value, Index count = 0);
 
     bool debugFunc();
 

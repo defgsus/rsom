@@ -184,8 +184,14 @@ private:
     /** Returns the index of the best matching cell for the Data.
         If @p only_vacant is true, this will avoids cells that are
         already occupied by a sample index (in imap).
-        Then, the function returns -1, if no entry could be found. */
-    Index best_match_(DataIndex * data, bool only_vacant);
+        Then, the function returns -1, if no entry could be found.
+        If @p value is not NULL, it will contain the difference between
+        the data sample and the map and the found index. */
+    Index best_match_(DataIndex * data, bool only_vacant, Float * value);
+
+    /** Same as best_match_() but only looks in the given window. */
+    Index best_match_window_(DataIndex * data, bool only_vacant, Float * value,
+                             Index x, Index y, Index w, Index h);
 
     // _______ PRIVATE MEMBER _________
 
@@ -236,7 +242,7 @@ private:
     /** neighbour relations, multi-purpose space */
     std::vector<Float> umap_;
     /** data indices for each cell */
-    std::vector<Index> imap_;
+    mutable std::vector<Index> imap_;
 
     /** reference to the processed data */
     const Data * data_container_;

@@ -23,7 +23,7 @@
 #include <cmath>
 
 /** linear filter coefficient for following with runtime statistics */
-#define SOM_FOLLOW_SPEED 1.f/5000.f
+#define SOM_FOLLOW_SPEED 1.f/300.f
 
 namespace RSOM
 {
@@ -208,11 +208,13 @@ const Float * Som::getMap() const
 
 Index * Som::getIMap()
 {
+    backend_->downloadIMap(&imap_[0]);
     return &imap_[0];
 }
 
 const Index * Som::getIMap() const
 {
+    backend_->downloadIMap(&imap_[0]);
     return &imap_[0];
 }
 
@@ -239,7 +241,22 @@ void Som::insert(Index sample_index)
               : std::min(sample_index, (Index)samples_.size());
 
     // find best match
-    int index = best_match_(&samples_[nr], do_non_duplicate_);
+    Float diff;
+    int index;
+
+    // cell was not indexed yet?
+    if (samples_[nr].index<0 || local_search_radius_ >= size_diag_)
+        index = best_match_(&samples_[nr], do_non_duplicate_, &diff);
+    // search only in neighbourhood
+    else
+    {
+        Index x = std::max(0, (int)(samples_[nr].index%sizex_ - local_search_radius_)),
+              y = std::max(0, (int)(samples_[nr].index/sizex_ - local_search_radius_)),
+              w = std::min(sizex_ - x, (int)local_search_radius_),
+              h = std::min(sizey_ - y, (int)local_search_radius_);
+        index = best_match_window_(&samples_[nr], do_non_duplicate_, &diff,
+                                   x,y,w,h);
+    }
 
     // failed??
     if (index<0)
@@ -256,12 +273,16 @@ void Som::insert(Index sample_index)
     // keep track of indices
     moveData(&samples_[nr], index);
 
+    // keep track of best match
+    stat_av_best_match_ += SOM_FOLLOW_SPEED * (diff - stat_av_best_match_);
+
     ++generation_;
 }
 
 
 void Som::moveData(DataIndex * data, Index index)
 {
+    // this sample is on the map already?
     if (data->index>=0)
     {
         // remove old imap point
@@ -281,16 +302,42 @@ void Som::moveData(DataIndex * data, Index index)
 
 // ------------------ matching ----------------------
 
-Index Som::best_match_(DataIndex * data, bool only_vacant)
+Index Som::best_match_(DataIndex * data, bool only_vacant, Float * pvalue)
 {
+    const Float HIGH_VALUE = 1000000;
     Index index = 0;
+    Float value = 0;
     backend_->uploadVec(data->data);
-    backend_->calcDMap(only_vacant, 100000);
-    backend_->getMinDMap(index);
+    backend_->calcDMap(only_vacant, HIGH_VALUE);
+    backend_->getMinDMap(index, value);
 
+    // all cells where occupied??
+    if (only_vacant && value >= HIGH_VALUE)
+        return -1;
+
+    // copy diff value
+    if (pvalue) *pvalue = value;
     return index;
 }
 
+Index Som::best_match_window_(DataIndex * data, bool only_vacant, Float * pvalue,
+                              Index x, Index y, Index w, Index h)
+{
+    const Float HIGH_VALUE = 1000000;
+    Index index = 0;
+    Float value = 0;
+    backend_->uploadVec(data->data);
+    backend_->calcDMap(x, y, w, h, only_vacant, HIGH_VALUE);
+    backend_->getMinDMap(index, value, w*h);
+
+    // all cells where occupied??
+    if (only_vacant && value >= HIGH_VALUE)
+        return -1;
+
+    // copy diff value
+    if (pvalue) *pvalue = value;
+    return index;
+}
 
 
 
