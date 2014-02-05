@@ -2,6 +2,11 @@ r-som (spell 'awesome')
 
 A Self-Organizing Map for arbitrary (ascii) data running on Cuda
 
+This is in development right now.
+GUI is not completely usable, paths to files are hardcoded right now.
+
+Once a stable version is done, development will only happen on dev branch.
+
 copyright 2013 stefan.berke@modular-audio-graphics.com
 
 Any comments, bug-reports and especially pointers to stuff you
