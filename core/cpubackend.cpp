@@ -213,13 +213,11 @@ bool CpuBackend::calcDMap(Index x, Index y, Index w, Index h,
     return true;
 }
 
-bool CpuBackend::getMinDMap(Index& index, Float& value, Index count)
+bool CpuBackend::getMinDMap(Index& index, Float& value)
 {
-    count = count? std::min(size, count) : size;
-
     index = -1;
     value = 0;
-    for (Index i=0; i<count; ++i)
+    for (Index i=0; i<size; ++i)
     {
         Float d = cpu_dmap[i];
         if (index<0 || d < value)
@@ -228,6 +226,26 @@ bool CpuBackend::getMinDMap(Index& index, Float& value, Index count)
             value = d;
         }
     }
+    return true;
+}
+
+bool CpuBackend::getMinDMap(Index& index, Float& value,
+                            Index x, Index y, Index w, Index h)
+{
+    index = -1;
+    value = 0;
+    for (Index i=0; i<w*h; ++i)
+    {
+        Float d = cpu_dmap[i];
+        if (index<0 || d < value)
+        {
+            index = i;
+            value = d;
+        }
+    }
+    // transform index from dmap into window
+    index = x + index % w + (y + index / w) * sizex;
+
     return true;
 }
 

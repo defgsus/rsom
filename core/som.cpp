@@ -21,6 +21,7 @@
 
 #include <sstream>
 #include <cmath>
+#include <fstream>
 
 /** linear filter coefficient for following with runtime statistics */
 #define SOM_FOLLOW_SPEED 1.f/300.f
@@ -40,9 +41,9 @@ Som::Som(BackendType backend_type)
         generation_          (0),
         num_failed_inserts_  (0),
 
-        radius_              (1),
-        alpha_               (1),
-        local_search_radius_ (1),
+        radius_              (0.2),
+        alpha_               (0.05),
+        local_search_radius_ (2),
 
         do_wrap_             (true),
         do_non_duplicate_    (true),
@@ -62,6 +63,60 @@ Som::~Som()
 {
     delete backend_;
 }
+
+bool Som::saveMap(const std::string& filename)
+{
+    SOM_DEBUG("Som::saveMap(" << filename << ")");
+
+    std::ofstream f;
+    f.open(filename.c_str(), std::ios_base::out);
+    if (!f.is_open()) return false;
+
+    getMap();
+
+    f << sizex_ << " " << sizey_ << " " << dim_;
+    for (auto i = map_.begin(); i!=map_.end(); ++i)
+        f << " " << *i;
+
+    return true;
+}
+
+bool Som::loadMap(const std::string& filename)
+{
+    SOM_DEBUG("Som::loadMap(" << filename << ")");
+
+    std::ifstream f;
+    f.open(filename.c_str(), std::ios_base::in);
+    if (!f.is_open()) return false;
+
+    try
+    {
+        f >> sizex_ >> sizey_ >> dim_;
+
+        create(sizex_, sizey_, dim_, 0);
+        initMap();
+
+        for (auto i = map_.begin(); i!=map_.end(); ++i)
+            f >> *i;
+
+        backend_->uploadMap(&map_[0]);
+        backend_->uploadIMap(&imap_[0]);
+    }
+    catch (...)
+    {
+        SOM_ERROR("error while reading " << filename);
+        return false;
+    }
+
+    return true;
+}
+
+
+
+
+
+
+
 
 std::string Som::info_str() const
 {
@@ -307,7 +362,14 @@ Index Som::best_match_(DataIndex * data, bool only_vacant, Float * pvalue)
     const Float HIGH_VALUE = 1000000;
     Index index = 0;
     Float value = 0;
+
     backend_->uploadVec(data->data);
+
+    // take this sample out of the map while searching
+    if (data->index>=0)
+        backend_->setIMapValue(data->index, -1);
+
+    // find best match
     backend_->calcDMap(only_vacant, HIGH_VALUE);
     backend_->getMinDMap(index, value);
 
@@ -327,8 +389,14 @@ Index Som::best_match_window_(DataIndex * data, bool only_vacant, Float * pvalue
     Index index = 0;
     Float value = 0;
     backend_->uploadVec(data->data);
+
+    // take this sample out of the map while searching
+    if (data->index>=0)
+        backend_->setIMapValue(data->index, -1);
+
+    // find best match
     backend_->calcDMap(x, y, w, h, only_vacant, HIGH_VALUE);
-    backend_->getMinDMap(index, value, w*h);
+    backend_->getMinDMap(index, value, x, y, w, h);
 
     // all cells where occupied??
     if (only_vacant && value >= HIGH_VALUE)

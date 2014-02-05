@@ -94,14 +94,20 @@ public:
         @note For efficiency reasons, the dmap is filled linearily starting
         at the beginning (not in the specified window).
         So to search for the best match in a window, run getMinDMap() with
-        a count equal to the window size afterwards. */
+        the window settings afterwards. */
     virtual bool calcDMap(Index x, Index y, Index w, Index h,
                           bool only_vacant = false, Float fixed_value = 0) = 0;
 
     /** Returns index to smallest dmap value in @p index and the
         value in @p value.
         If @p count is not zero, only this many fields in dmap will be considered. */
-    virtual bool getMinDMap(Index& index, Float& value, Index count=0) = 0;
+    virtual bool getMinDMap(Index& index, Float& value) = 0;
+
+    /** Returns index to smallest dmap value in @p index and the
+        value in @p value.
+        Windowed version. */
+    virtual bool getMinDMap(Index& index, Float& value,
+                            Index x, Index y, Index w, Index h) = 0;
 
     // ---- debug ----
 

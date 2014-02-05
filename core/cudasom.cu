@@ -329,6 +329,25 @@ bool cudaSom_getMin(Float * dmap, Index size, Index& index, Float& value)
     return true;
 }
 
+/** Returns in @p index, the index to the smallest value in @p dmap.
+    Also the distance itself is returned in @p value. */
+bool cudaSom_getMin(Float * dmap, Index mapw, Index x, Index y, Index w, Index h, Index& index, Float& value)
+{
+    int midx;
+
+    CHECK_CUBLAS( cublasIsamin_v2(cublas_handle(), w*h, dmap, 1, &midx), return false; );
+
+    // cublas is 1-based!!
+    index = midx - 1;
+
+    // transform index into window
+    index = x + index % w + (y + index / w) * mapw;
+
+    CHECK_CUDA( cudaMemcpy(&value, &dmap[index], sizeof(Float), cudaMemcpyDeviceToHost), return false );
+
+    return true;
+}
+
 #ifdef OLD_EXPERIMENT_NOT_NEEDED_RIGHT_NOW
 __global__ void kernel_reduce_min(Index * minindex, Float *dmap, Index size, Index stride)
 {

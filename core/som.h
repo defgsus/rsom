@@ -87,6 +87,11 @@ class Som
     Som(BackendType backend_type = CPU);
     ~Som();
 
+    // ------------- IO ------------------
+
+    bool saveMap(const std::string& filename);
+    bool loadMap(const std::string& filename);
+
     // --------- getter ------------------
 
     Index size() const { return size_; }
@@ -175,6 +180,7 @@ class Som
     /** Returns pointer to sizey * sizex ints. */
           Index * getIMap();
     const Index * getIMap() const;
+
 
     // _________ PRIVATE AREA _________________
 private:

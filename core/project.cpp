@@ -40,8 +40,8 @@ Project::Project()
       name_          ("new.rsom"),
 
       som_alpha_         (0.05),
-      som_radius_        (0.07),
-      som_search_radius_ (0.07),
+      som_radius_        (0.2),
+      som_search_radius_ (2.0),
 
       data_              (new Data),
       som_               (new Som(Som::CUDA)),

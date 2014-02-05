@@ -39,7 +39,8 @@ bool cudaSom_compare(Float * map, Index w, Index h, Index d, Float * dmap, Float
                      Index wx, Index wy, Index ww, Index wh,
                      Index threads, bool only_vacant=false, Float fixed_value=0, Index * imap=0);
 bool cudaSom_getMin(Float * dmap, Index size, Index& output, Float& distance);
-bool cudaSom_getMinVacant(Float * dmap, Index * imap, Index size, Index& output, Index * scratch);
+bool cudaSom_getMin(Float * dmap, Index sizex, Index x, Index y, Index w, Index h, Index& output, Float& distance);
+//bool cudaSom_getMinVacant(Float * dmap, Index * imap, Index size, Index& output, Index * scratch);
 bool cudaSom_mult(Float * dst, Float * src1, Float * src2, Index size, Index threads);
 bool cudaSom_setImap(Index * imap, Index x, Index value);
 
@@ -237,11 +238,19 @@ bool CudaBackend::calcDMap(Index x, Index y, Index w, Index h,
     return true;
 }
 
-bool CudaBackend::getMinDMap(Index& index, Float& distance, Index count)
+bool CudaBackend::getMinDMap(Index& index, Float& distance)
 {
-    count = count? std::min(size, count) : size;
+    if (! cudaSom_getMin(dev_dmap, size, index, distance)
+        ) return false;
 
-    if (! cudaSom_getMin(dev_dmap, count, index, distance)
+    CHECK_CUDA( cudaThreadSynchronize(), return false );
+    return true;
+}
+
+bool CudaBackend::getMinDMap(Index& index, Float& distance,
+                             Index x, Index y, Index w, Index h)
+{
+    if (! cudaSom_getMin(dev_dmap, sizex, x, y, w, h, index, distance)
         ) return false;
 
     CHECK_CUDA( cudaThreadSynchronize(), return false );

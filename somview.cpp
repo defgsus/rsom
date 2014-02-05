@@ -32,7 +32,8 @@ SomView::SomView(QWidget * parent)
     setFrameStyle(QFrame::Panel | QFrame::Sunken);
     setLineWidth(2);
 
-    setFixedSize(386,386);
+    //setFixedSize(386,386);
+    setFixedSize(512,512);
 }
 
 void SomView::paintBandNr(size_t band_nr)

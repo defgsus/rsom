@@ -73,6 +73,9 @@ protected:
     /** (re-)set the wave parameters using Properties */
     void set_som_();
 
+    bool save_som_();
+    bool load_som_();
+
     /** update the needed maps immidiately */
     void calc_maps_();
 
@@ -87,7 +90,8 @@ protected:
     QLabel * sominfo_;
     QTextBrowser * log_box_;
 
-    QString data_dir_, export_dir_;
+    QString data_dir_, export_dir_,
+            som_dir_;
 
     // properties
     Properties * props_;

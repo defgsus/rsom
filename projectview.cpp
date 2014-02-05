@@ -49,6 +49,7 @@ ProjectView::ProjectView(RSOM::Project * p, QWidget *parent) :
     project_    (p),
     data_dir_   ("."),
     export_dir_ ("."),
+    som_dir_   ("."),
     props_      (new Properties)
 {
     // some signals for threadsafety
@@ -432,6 +433,8 @@ ProjectView::ProjectView(RSOM::Project * p, QWidget *parent) :
 
         // ---- SOM view ----
 
+        QPushButton * b_som_save, * b_som_load;
+
         l1 = new QHBoxLayout(0);
         l0->addLayout(l1);
         {
@@ -507,6 +510,13 @@ ProjectView::ProjectView(RSOM::Project * p, QWidget *parent) :
                 som_non_dupl_->   createWidget(this, l2, lt);
                 som_wrap_->       createWidget(this, l2, lt);
 
+                b_som_save = new QPushButton(this);
+                b_som_save->setText("save");
+                l2->addWidget(b_som_save);
+                b_som_load = new QPushButton(this);
+                b_som_load->setText("load");
+                l2->addWidget(b_som_load);
+
                 l2->addStretch(2);
             }
         }
@@ -563,6 +573,11 @@ ProjectView::ProjectView(RSOM::Project * p, QWidget *parent) :
         {
             dataview_->draw_object( project_->som().getIMap()[index] );
         });
+
+        // save
+
+        connect(b_som_save, &QPushButton::clicked, [=]() { save_som_(); } );
+        connect(b_som_load, &QPushButton::clicked, [=]() { load_som_(); } );
 
 
         // when SOM is allocated
@@ -678,8 +693,8 @@ bool ProjectView::loadData(/*const std::string& fn*/)
     somview_->setSom(0);
 
     //project_->data().maxObjects(30000);
-    //if (!project_->data().addCsvFile("/home/defgsus/prog/DATA/golstat.txt")) return false;
-    if (!project_->data().loadAsciiDir( fn.toStdString() )) return false;
+    if (!project_->data().addCsvFile("/home/defgsus/prog/DATA/golstat.txt")) return false;
+    //if (!project_->data().loadAsciiDir( fn.toStdString() )) return false;
 
     project_->data().clamp(0, 15);
     project_->data().normalize();
@@ -693,6 +708,8 @@ bool ProjectView::loadData(/*const std::string& fn*/)
 
     return true;
 }
+
+
 
 bool ProjectView::exportTable()
 {
@@ -804,6 +821,63 @@ void ProjectView::set_som_()
             som_size_->v_int[1],
             som_seed_->v_int[0]
         );
+}
+
+bool ProjectView::save_som_()
+{
+    QString fn =
+        QFileDialog::getSaveFileName(this,
+            "Save SOM Data",
+            som_dir_,
+            "SOM Files (*.txt *.som *.*)"
+            );
+
+    if (fn.isNull()) return false;
+
+    // store this directory
+    QDir dir(fn);
+    som_dir_ = dir.absolutePath();
+
+    return project_->som().saveMap(fn.toStdString());
+}
+
+bool ProjectView::load_som_()
+{
+    QString fn =
+        QFileDialog::getOpenFileName(this,
+            "Load SOM Data",
+            som_dir_,
+            "SOM Files (*.txt *.som *.*)"
+            );
+
+    if (fn.isNull()) return false;
+
+    // store this directory
+    QDir dir(fn);
+    som_dir_ = dir.absolutePath();
+
+    stopTraining();
+    somview_->setSom(0);
+
+    bool r = project_->som().loadMap(fn.toStdString());
+
+    if (!r)
+    {
+        SOM_ERROR("unable to load map " << fn.toStdString());
+    }
+
+    somview_->setSom(&project_->som());
+    if (r)
+    {
+        som_size_use_f_->v_bool[0] = false;
+        som_size_use_f_->updateWidget(false);
+        som_size_->v_int[0] = project_->som().sizex();
+        som_size_->v_int[1] = project_->som().sizey();
+        som_size_->updateWidget(false);
+
+    //    startTraining();
+    }
+    return r;
 }
 
 

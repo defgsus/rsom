@@ -70,7 +70,10 @@ public:
     bool calcDMap(Index x, Index y, Index w, Index h,
                   bool only_vacant = false, Float fixed_value = 0);
 
-    bool getMinDMap(Index& index, Float& value, Index count = 0);
+    bool getMinDMap(Index& index, Float& value);
+
+    bool getMinDMap(Index& index, Float& value,
+                    Index x, Index y, Index w, Index h);
 
     bool debugFunc();
 

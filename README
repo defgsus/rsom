@@ -1,8 +1,6 @@
 r-som (spell 'awesome')
 
-A Self-Organizing Map for arbitrary (ascii) data
-
-This is the development branch, basically to test Som and Backend classes and to compare speed (CPU/GPU).
+A Self-Organizing Map for arbitrary (ascii) data running on Cuda
 
 copyright 2013 stefan.berke@modular-audio-graphics.com
 
