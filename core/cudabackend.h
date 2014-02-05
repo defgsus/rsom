@@ -58,11 +58,15 @@ public:
 
     bool downloadDMap(Float * dmap);
 
+    bool downloadUMap(Float * dmap);
+
     // --- functions ---
 
     bool set(Index x, Index y, Index rx, Index ry, Float amp);
 
     bool setIMapValue(Index x, Index value);
+
+    bool calcUMap();
 
     bool calcDMap(bool only_vacant = false, Float fixed_value = 0);
 
@@ -73,6 +77,10 @@ public:
 
     bool getMinDMap(Index& index, Float& value,
                     Index x, Index y, Index w, Index h);
+
+    bool normalizeUMap(Float factor = 1);
+
+    bool normalize(Float * map, Index size, Float factor = 1);
 
     bool debugFunc();
 
@@ -85,6 +93,8 @@ public:
         * dev_map,
     /** 2d difference map */
         * dev_dmap,
+    /** 2d neighbour difference */
+        * dev_umap,
     /** one vector of length CudaBackend::dim used for questions */
         * dev_vec;
     Index

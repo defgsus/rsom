@@ -22,6 +22,7 @@
 #include <sstream>
 #include <cmath>
 #include <fstream>
+#include <iomanip>
 
 /** linear filter coefficient for following with runtime statistics */
 #define SOM_FOLLOW_SPEED 1.f/300.f
@@ -120,10 +121,11 @@ bool Som::loadMap(const std::string& filename)
 
 std::string Som::info_str() const
 {
+    Float epoch = (Float)generation_ / std::max((size_t)1, samples_.size());
     std::stringstream s;
     s << sizex_ << "x" << sizey_ << "x" << dim_ << " (" << sizex_*sizey_ << "x" << dim_ << ")"
       << "\ngeneration     " << generation_ << " (" << (generation_/1000000) << "M)"
-      << "\nepoch          " << generation_ / std::max((size_t)1, samples_.size())
+      << "\nepoch          " << std::setprecision(3) << epoch
       << "\nbest match     " << stat_av_best_match_
       << "\nfailed inserts " << num_failed_inserts_
     ;
@@ -249,28 +251,26 @@ void Som::setData(const Data * data)
         createDataIndex( data->getObjectData(i), i );
 }
 
-Float * Som::getMap()
+bool Som::updateMap()
 {
-    backend_->downloadMap(&map_[0]);
-    return &map_[0];
+    return backend_->downloadMap(&map_[0]);
 }
 
-const Float * Som::getMap() const
+bool Som::updateIMap()
 {
-    backend_->downloadMap(&map_[0]);
-    return &map_[0];
+    return backend_->downloadIMap(&imap_[0]);
 }
 
-Index * Som::getIMap()
+bool Som::updateUMap(bool do_normalize, Float factor)
 {
-    backend_->downloadIMap(&imap_[0]);
-    return &imap_[0];
-}
+    if (!backend_->calcUMap()) return false;
+    if (do_normalize)
+    {
+        if (!backend_->normalizeUMap(factor))
+            return false;
+    }
 
-const Index * Som::getIMap() const
-{
-    backend_->downloadIMap(&imap_[0]);
-    return &imap_[0];
+    return backend_->downloadUMap(&umap_[0]);
 }
 
 
@@ -367,7 +367,10 @@ Index Som::best_match_(DataIndex * data, bool only_vacant, Float * pvalue)
 
     // take this sample out of the map while searching
     if (data->index>=0)
+    {
+        imap_[data->index] = -1;
         backend_->setIMapValue(data->index, -1);
+    }
 
     // find best match
     backend_->calcDMap(only_vacant, HIGH_VALUE);
@@ -392,8 +395,10 @@ Index Som::best_match_window_(DataIndex * data, bool only_vacant, Float * pvalue
 
     // take this sample out of the map while searching
     if (data->index>=0)
+    {
+        imap_[data->index] = -1;
         backend_->setIMapValue(data->index, -1);
-
+    }
     // find best match
     backend_->calcDMap(x, y, w, h, only_vacant, HIGH_VALUE);
     backend_->getMinDMap(index, value, x, y, w, h);

@@ -14,6 +14,7 @@
 */
 #include "project.h"
 
+#include "time.h"
 #include "data.h"
 #include "log.h"
 
@@ -21,8 +22,6 @@
 #include <future>
 #include <sstream>
 
-/// @todo is there a std implementation of something like QElapsedTimer?
-#include <QElapsedTimer>
 
 
 #define SOM_CALLBACK(cb_name__) \
@@ -49,6 +48,10 @@ Project::Project()
 
       run_som_           (false),
       som_ready_         (false),
+
+      need_map_          (false),
+      need_imap_         (false),
+      need_umap_         (false),
 
       cb_som_ready_      (0),
       cb_som_            (0)
@@ -198,7 +201,7 @@ void Project::work_loop_()
 
     last_generation_ = som_->generation();
 
-    QElapsedTimer timer;
+    Messure timer;
     timer.start();
     while (run_som_)
     {
@@ -211,15 +214,21 @@ void Project::work_loop_()
         som_->insert();
 
         // callback after period
-        if (timer.elapsed() > 200)
+        if (timer.elapsed() > 0.25)
         {
+            timer.start();
+
             // messure speed
             inserts_per_second_ =
                     (som_->generation() - last_generation_) / 0.2;
             last_generation_ = som_->generation();
 
+            // update maps
+            if (need_map_) som_->updateMap();
+            if (need_imap_) som_->updateIMap();
+            if (need_umap_) som_->updateUMap(true);
+
             SOM_CALLBACK(cb_som);
-            timer.start();
         }
 
         //usleep(1000*1);

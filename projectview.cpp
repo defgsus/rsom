@@ -692,11 +692,11 @@ bool ProjectView::loadData(/*const std::string& fn*/)
     dataview_->setData(0);
     somview_->setSom(0);
 
-    //project_->data().maxObjects(30000);
+    //project_->data().maxObjects(7000);
     if (!project_->data().addCsvFile("/home/defgsus/prog/DATA/golstat.txt")) return false;
     //if (!project_->data().loadAsciiDir( fn.toStdString() )) return false;
 
-    project_->data().clamp(0, 15);
+    project_->data().clamp(0, 60);
     project_->data().normalize();
 
 
@@ -899,8 +899,12 @@ void ProjectView::setSomPaintMode_()
 
         case SDM_IMAP:          somview_->paintMode(SomView::PM_IMap); break;
 
-        default:                somview_->paintMode(SomView::PM_UMap); break;
+        case SDM_UMAP:          somview_->paintMode(SomView::PM_UMap); break;
     }
+
+    project_->need_map(pmode == SDM_SINGLE_BAND || pmode == SDM_MULTI_BAND);
+    project_->need_imap(pmode == SDM_IMAP);
+    project_->need_umap(pmode == SDM_UMAP);
 
     if (!project_->running())
         somview_->update();

@@ -22,7 +22,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
     @version 2014/02/03 started
 
-    copyright 2012, 2013, 2014 stefan.berke @ modular-audio-graphics.com
+    copyright 2014 stefan.berke @ modular-audio-graphics.com
 */
 #ifndef TIME_H
 #define TIME_H

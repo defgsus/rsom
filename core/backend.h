@@ -71,6 +71,9 @@ public:
     /** get current difference map */
     virtual bool downloadDMap(Float * dmap) = 0;
 
+    /** get current neighbour difference map */
+    virtual bool downloadUMap(Float * dmap) = 0;
+
     // --- functions ---
 
     /** adjust the neighbourhood around x,y, with radius rx,ry, to uploaded vector. */
@@ -78,6 +81,9 @@ public:
 
     /** change the @p x th value in imap to @p value. */
     virtual bool setIMapValue(Index x, Index value) = 0;
+
+    /** calculate the neighbour distance of each cell. */
+    virtual bool calcUMap() = 0;
 
     /** Calculates the distance of each cell to the
         previously uploaded vector.
@@ -108,6 +114,12 @@ public:
         Windowed version. */
     virtual bool getMinDMap(Index& index, Float& value,
                             Index x, Index y, Index w, Index h) = 0;
+
+    /** normalize the neighbour difference map. */
+    virtual bool normalizeUMap(Float factor = 1) = 0;
+
+    /** normalize a piece of data. */
+    virtual bool normalize(Float * map, Index size, Float factor = 1) = 0;
 
     // ---- debug ----
 

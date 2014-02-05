@@ -50,9 +50,17 @@ public:
     Project();
     ~Project();
 
-    // --- get properties ---
+    // --- properties ---
 
     const std::string  info_str()       const;
+
+    bool need_map() const { return need_map_; }
+    bool need_imap() const { return need_imap_; }
+    bool need_umap() const { return need_umap_; }
+
+    void need_map(bool yes) { need_map_ = yes; }
+    void need_imap(bool yes) { need_imap_ = yes; }
+    void need_umap(bool yes) { need_umap_ = yes; }
 
     // --- data access ---
 
@@ -163,6 +171,12 @@ private:
 
     int inserts_per_second_;
     size_t last_generation_;
+
+    // needed data to update between calculations
+
+    bool need_map_,
+        need_imap_,
+        need_umap_;
 
     // -- callbacks --
     std::function<void()>

@@ -13,14 +13,13 @@
     Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 */
 /** @file
-    @brief self-organizing map class for use with reaktor_som
+    @brief self-organizing map class
 
-    @author def.gsus- (berke@cymatrix.org)
-    @version 2012/07/11
+    @version 2012/07/11 started as part of reaktor_som
     @version 2013/12/18 tidied up and removed opengl stuff, made x/y separate
     @version 2013/12/21 started local search
     @version 2014/01/28 threw out Wave class and worked with Data instead
-    @version 2014/02/02 started Backend
+    @version 2014/02/02 started Backend integration
 
     copyright 2012, 2013, 2014 stefan.berke @ modular-audio-graphics.com
 */
@@ -172,15 +171,24 @@ class Som
 
     // --------- map access -------------------
 
-    /** Returns pointer to sizey * sizex * dim floats.
-        The map is possibly copied from the device before return of function. */
-          Float * getMap();
-    const Float * getMap() const;
+    /** Copys the current map to threadsafe memory, accessed by getMap(). */
+    bool          updateMap();
+    /** Returns pointer to sizey * sizex * dim floats. */
+          Float * getMap() { return &map_[0]; }
+    const Float * getMap() const { return &map_[0]; }
 
+    /** Copys the current imap to threadsafe memory, accessed by getIMap(). */
+    bool          updateIMap();
     /** Returns pointer to sizey * sizex ints. */
-          Index * getIMap();
-    const Index * getIMap() const;
+          Index * getIMap() { return &imap_[0]; }
+    const Index * getIMap() const { return &imap_[0]; }
 
+    /** Calculates and copys the current neighbour distance map to
+        threadsafe memory, accessed by getUMap(). */
+    bool          updateUMap(bool do_normalize = false, Float factor = 1.0);
+    /** Returns pointer to sizey * sizex floats. */
+          Float * getUMap() { return &umap_[0]; }
+    const Float * getUMap() const { return &umap_[0]; }
 
     // _________ PRIVATE AREA _________________
 private:
@@ -200,6 +208,8 @@ private:
                              Index x, Index y, Index w, Index h);
 
     // _______ PRIVATE MEMBER _________
+
+    // ---- config ----
 
     Index
         sizex_, sizey_,
@@ -244,11 +254,11 @@ private:
     /** representation of input samples */
     std::vector<DataIndex> samples_;
     /** the self-organizing map [sizey*sizex][dim] */
-    mutable std::vector<Float> map_;
-    /** neighbour relations, multi-purpose space */
+    std::vector<Float> map_;
+    /** neighbour differences */
     std::vector<Float> umap_;
     /** data indices for each cell */
-    mutable std::vector<Index> imap_;
+    std::vector<Index> imap_;
 
     /** reference to the processed data */
     const Data * data_container_;

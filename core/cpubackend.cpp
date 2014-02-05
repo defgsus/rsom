@@ -49,9 +49,10 @@ bool CpuBackend::free()
     dim = 0;
 
     { std::vector<Float> tmp; tmp.swap(cpu_map); }
+    { std::vector<Index> tmp; tmp.swap(cpu_imap); }
+    { std::vector<Float> tmp; tmp.swap(cpu_umap); }
     { std::vector<Float> tmp; tmp.swap(cpu_dmap); }
     { std::vector<Float> tmp; tmp.swap(cpu_vec); }
-    { std::vector<Index> tmp; tmp.swap(cpu_imap); }
 
     return true;
 }
@@ -75,6 +76,7 @@ bool CpuBackend::setMemory(Index sizex_, Index sizey_, Index dim_)
     {
         cpu_vec.resize(dim);
         cpu_dmap.resize(size);
+        cpu_umap.resize(size);
         cpu_imap.resize(size);
         cpu_map.resize(size*dim);
     }
@@ -137,6 +139,13 @@ bool CpuBackend::downloadDMap(Float * dmap)
     return true;
 }
 
+bool CpuBackend::downloadUMap(Float * umap)
+{
+    for (auto i=cpu_umap.begin(); i!=cpu_umap.end(); ++i, ++umap)
+        *umap = *i;
+    return true;
+}
+
 bool CpuBackend::setIMapValue(Index x, Index value)
 {
     if (x<0 || x>=size) return false;
@@ -174,6 +183,40 @@ bool CpuBackend::set(Index x, Index y, Index rx, Index ry, Float amp)
     return true;
 }
 
+bool CpuBackend::calcUMap()
+{
+    for (Index y=1; y<sizey-1; ++y)
+    for (Index x=1; x<sizex-1; ++x)
+    {
+        Float d = 0;
+        #define CPUB_GET_DIFF(i_, j_) \
+        { \
+            const Float \
+                * map1 = &cpu_map[i_], \
+                * map2 = &cpu_map[j_]; \
+            for (Index z=0; z<dim; ++z, map1+=size, map2+=size) \
+                d += fabsf(*map2 - *map1); \
+        }
+
+        const Index i = y * sizex + x;
+
+        CPUB_GET_DIFF(i, (y-1) * sizex + x - 1);
+        CPUB_GET_DIFF(i, (y-1) * sizex + x    );
+        CPUB_GET_DIFF(i, (y-1) * sizex + x + 1);
+        CPUB_GET_DIFF(i,     y * sizex + x - 1);
+        CPUB_GET_DIFF(i,     y * sizex + x + 1);
+        CPUB_GET_DIFF(i, (y+1) * sizex + x - 1);
+        CPUB_GET_DIFF(i, (y+1) * sizex + x    );
+        CPUB_GET_DIFF(i, (y+1) * sizex + x + 1);
+
+        #undef CPUB_GET_DIFF
+
+        cpu_umap[i] = d / (Float)(dim * 8);
+    }
+
+    return true;
+}
+
 bool CpuBackend::calcDMap(bool only_vacant, Float fixed_value)
 {
     return calcDMap(0,0,sizex,sizey, only_vacant, fixed_value);
@@ -183,31 +226,33 @@ bool CpuBackend::calcDMap(Index x, Index y, Index w, Index h,
                           bool only_vacant, Float fixed_value)
 {
     const Index
-            x0 = std::max(0,std::min(sizex-1, x )),
-            x1 = std::max(0,std::min(sizex-1, x + w )),
-            y0 = std::max(0,std::min(sizey-1, y )),
-            y1 = std::max(0,std::min(sizey-1, y + h ));
-
+            x0 = std::max(0,std::min(sizex, x )),
+            x1 = std::max(0,std::min(sizex, x + w )),
+            y0 = std::max(0,std::min(sizey, y )),
+            y1 = std::max(0,std::min(sizey, y + h ));
+    //std::cout << x0 << ", " << y0 << "  " << x1 << ", " << y1 << "\n";
     // for each cell
+    Index i_linear = 0;
     for (Index j=y0; j<y1; ++j)
-    for (Index i=x0; i<x1; ++i)
+    for (Index i=x0; i<x1; ++i, ++i_linear)
     {
-        const Index idx = j * sizex + i;
+        // window -> index in map
+        const Index mapi = j * sizex + i;
 
-        Float * p = &cpu_map[idx];
-
-        if (only_vacant && cpu_imap[idx]>=0)
+        if (only_vacant && cpu_imap[mapi]>=0)
         {
-            cpu_dmap[idx] = fixed_value;
+            cpu_dmap[i_linear] = fixed_value;
         }
         else
         {
+            const Float * p = &cpu_map[mapi];
+
             // get difference between cpu_vec and cell
             Float d = 0;
             for (Index k=0; k<dim; ++k, p += size)
                 d += fabsf(cpu_vec[k] - *p);
 
-            cpu_dmap[i] = d / dim;
+            cpu_dmap[i_linear] = d / dim;
         }
     }
     return true;
@@ -226,6 +271,7 @@ bool CpuBackend::getMinDMap(Index& index, Float& value)
             value = d;
         }
     }
+    //std::cout << index << "\n";
     return true;
 }
 
@@ -248,6 +294,29 @@ bool CpuBackend::getMinDMap(Index& index, Float& value,
 
     return true;
 }
+
+bool CpuBackend::normalizeUMap(Float factor)
+{
+    return normalize(&cpu_umap[0], size, factor);
+}
+
+bool CpuBackend::normalize(Float * map, Index size, Float factor)
+{
+    if (size<=0) return false;
+
+    Float maxv = *map;
+    for (Index i=1; i<size; ++i)
+        maxv = std::max(maxv, map[i]);
+    if (maxv)
+    {
+        maxv /= factor;
+        for (Index i=0; i<size; ++i)
+            *map++ /= maxv;
+    }
+    return true;
+}
+
+
 
 bool CpuBackend::debugFunc()
 {

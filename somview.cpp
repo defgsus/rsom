@@ -148,28 +148,29 @@ void SomView::paint_multi_band_()
 void SomView::paint_umap_()
 {
     SOM_DEBUGN(1, "SomView::paint_umap()");
-    /*
+
     QPainter p(this);
     p.setPen(Qt::NoPen);
 
     int w = width() - frameWidth() * 2,
         h = height() - frameWidth() * 2;
     const
-    qreal sx = (qreal)w / som_->sizex + 1,
-          sy = (qreal)h / som_->sizey + 1;
+    qreal sx = (qreal)w / som_->sizex() + 1,
+          sy = (qreal)h / som_->sizey() + 1;
 
-    for (int y=0; y<som_->sizey; ++y)
-    for (int x=0; x<som_->sizex; ++x)
+    const RSOM::Float * map = som_->getUMap();
+
+    for (int y=0; y<som_->sizey(); ++y)
+    for (int x=0; x<som_->sizex(); ++x)
     {
         // spectral color from umap
-        p.setBrush(QBrush(colors_.get(paint_mult_ * som_->umap[y*som_->sizex+x])));
+        p.setBrush(QBrush(colors_.get(paint_mult_ * map[y*som_->sizex()+x])));
 
-        p.drawRect( (qreal)x / som_->sizex * w + frameWidth(),
-                    (qreal)y / som_->sizey * h + frameWidth(),
+        p.drawRect( (qreal)x / som_->sizex() * w + frameWidth(),
+                    (qreal)y / som_->sizey() * h + frameWidth(),
                     sx, sy );
 
     }
-    */
 }
 
 

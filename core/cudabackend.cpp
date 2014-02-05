@@ -40,9 +40,11 @@ bool cudaSom_compare(Float * map, Index w, Index h, Index d, Float * dmap, Float
                      Index threads, bool only_vacant=false, Float fixed_value=0, Index * imap=0);
 bool cudaSom_getMin(Float * dmap, Index size, Index& output, Float& distance);
 bool cudaSom_getMin(Float * dmap, Index sizex, Index x, Index y, Index w, Index h, Index& output, Float& distance);
+bool cudaSom_calcUMap(Float * map, Index w, Index h, Index dim, Float * umap, Index threads);
 //bool cudaSom_getMinVacant(Float * dmap, Index * imap, Index size, Index& output, Index * scratch);
 bool cudaSom_mult(Float * dst, Float * src1, Float * src2, Index size, Index threads);
 bool cudaSom_setImap(Index * imap, Index x, Index value);
+bool cudaSom_normalize(Float * data, Index size, Float value);
 
 CudaBackend::CudaBackend(Index max_threads)
     : Backend(),
@@ -52,6 +54,7 @@ CudaBackend::CudaBackend(Index max_threads)
       dim(0),
       dev_map(0),
       dev_dmap(0),
+      dev_umap(0),
       dev_vec(0),
       dev_scratch(0),
       max_threads(max_threads)
@@ -89,6 +92,12 @@ bool CudaBackend::free()
     {
         CHECK_CUDA( cudaFree(dev_dmap), res = false; );
         dev_dmap = 0;
+    }
+
+    if (dev_dmap)
+    {
+        CHECK_CUDA( cudaFree(dev_umap), res = false; );
+        dev_umap = 0;
     }
 
     if (dev_imap)
@@ -132,6 +141,10 @@ bool CudaBackend::setMemory(Index sizex_, Index sizey_, Index dim_)
 
     // difference map
     CHECK_CUDA( cudaMalloc((void**)&dev_dmap, size * sizeof(Float)), return false );
+
+    // neighbour difference map
+    CHECK_CUDA( cudaMalloc((void**)&dev_umap, size * sizeof(Float)), return false );
+    CHECK_CUDA( cudaMemset((void*)dev_umap, 0, size * sizeof(Float)), return false );
 
     // index map
     CHECK_CUDA( cudaMalloc((void**)&dev_imap, size * sizeof(Index)), return false );
@@ -198,6 +211,13 @@ bool CudaBackend::downloadDMap(Float * dmap)
     return true;
 }
 
+bool CudaBackend::downloadUMap(Float * umap)
+{
+    CHECK_CUDA( cudaThreadSynchronize(), return false );
+    CHECK_CUDA( cudaMemcpy(umap, dev_umap, size * sizeof(Float), cudaMemcpyDeviceToHost), return false );
+    return true;
+}
+
 bool CudaBackend::setIMapValue(Index x, Index value)
 {
     if (x<0 || x>=size) return false;
@@ -208,6 +228,15 @@ bool CudaBackend::set(Index x, Index y, Index rx, Index ry, Float amp)
 {
     if (! cudaSom_set(dev_map, dev_vec, sizex, sizey, dim,
                        rx, ry, x, y, amp, 32)
+        ) return false;
+
+    CHECK_CUDA( cudaThreadSynchronize(), return false );
+    return true;
+}
+
+bool CudaBackend::calcUMap()
+{
+    if (! cudaSom_calcUMap(dev_map, sizex, sizey, dim, dev_umap, max_threads)
         ) return false;
 
     CHECK_CUDA( cudaThreadSynchronize(), return false );
@@ -254,6 +283,18 @@ bool CudaBackend::getMinDMap(Index& index, Float& distance,
         ) return false;
 
     CHECK_CUDA( cudaThreadSynchronize(), return false );
+    return true;
+}
+
+bool CudaBackend::normalizeUMap(Float factor)
+{
+    return cudaSom_normalize(dev_umap, size, factor);
+}
+
+bool CudaBackend::normalize(Float * map, Index size, Float factor)
+{
+    std::cerr << "not implemented\n";
+    exit(-1);
     return true;
 }
 

@@ -313,6 +313,7 @@ bool cudaSom_compare(Float * map, Index w, Index h, Index dim, Float * dmap, Flo
 
 
 
+
 // ----------------------- GET MIN -------------------------------
 
 /** Returns in @p index, the index to the smallest value in @p dmap.
@@ -420,6 +421,87 @@ bool cudaSom_getMinVacant(Float * dmap, Index * imap, Index size, Index& output,
     return true;
 }
 
+
+
+// --------------------------- CALC UMAP -----------------------------
+
+/** Calculates the neighbour distance of each cell */
+__global__ void kernel_umap(Float * map, Float * umap, Index w, Index h, Index dim, Index wx, Index wy, Index ww, Index wh)
+{
+    // cell for this thread
+    const Index
+            x = blockDim.x * blockIdx.x + threadIdx.x + wx,
+            y = blockDim.y * blockIdx.y + threadIdx.y + wy,
+            size = w*h;
+
+    const Float *map1, *map2;
+
+    if (x<ww && y<wh)
+    {
+        // current cell
+        Index i = y * w + x;
+
+        Float d = 0;
+
+        // compare cells i_ and j_
+        #define KERNEL_UMAP_DIFF(i_, j_) \
+        {   \
+            map1 = &map[i_], \
+            map2 = &map[j_]; \
+            for (Index j=0; j<dim; ++j, map1 += size, map2 += size) \
+                d += fabsf(*map2 - *map1); \
+        }
+
+        KERNEL_UMAP_DIFF(i, (y-1) * w + x - 1);
+        KERNEL_UMAP_DIFF(i, (y-1) * w + x    );
+        KERNEL_UMAP_DIFF(i, (y-1) * w + x + 1);
+        KERNEL_UMAP_DIFF(i,     y * w + x - 1);
+        KERNEL_UMAP_DIFF(i,     y * w + x + 1);
+        KERNEL_UMAP_DIFF(i, (y+1) * w + x - 1);
+        KERNEL_UMAP_DIFF(i, (y+1) * w + x    );
+        KERNEL_UMAP_DIFF(i, (y+1) * w + x + 1);
+
+        #undef KERNEL_UMAP_DIFF
+
+        // scale result
+        umap[i] = d / (Float)(dim * 8);
+    }
+}
+
+/** compare a window of cells in map with vector @p vec.
+    Store difference of each cell in @p dmap. */
+bool cudaSom_calcUMap(Float * map, Index w, Index h, Index dim, Float * umap, Index threads_)
+{
+    dim3
+        threads(sqrt(threads_), sqrt(threads_)),
+        blocks ((w-2+threads.x-1)/threads.x, (h-2+threads.y-1)/threads.y);
+
+/*    std::cout << "blocks="<<blocks.x<<", "<<blocks.y
+               <<" threads="<<threads.x<<", "<<threads.y<<"\n";
+*/
+    CHECK_CUDA_KERNEL(( kernel_umap<<<blocks, threads>>>(map, umap, w, h, dim, 1, 1, w-2, h-2) ),
+              DEBUG_CUDA("blocks="<<blocks.x<<", "<<blocks.y
+                         <<" threads="<<threads.x<<", "<<threads.y); return false );
+
+    return true;
+}
+
+// ------------------------- NORMALIZE -------------------------------
+
+bool cudaSom_normalize(Float * data, Index size, Float value)
+{
+    // get highest value
+    int midx;
+    CHECK_CUBLAS( cublasIsamax_v2(cublas_handle(), size, data, 1, &midx), return false; );
+    Float v;
+    CHECK_CUDA( cudaMemcpy(&v, &data[midx-1], sizeof(Float), cudaMemcpyDeviceToHost), return false );
+    if (v)
+    {
+        v = value / v;
+        CHECK_CUBLAS( cublasSscal_v2(cublas_handle(), size, &v, data, 1), return false; );
+    }
+    return true;
+}
 
 
 // ------------------------------- MULT ------------------------------

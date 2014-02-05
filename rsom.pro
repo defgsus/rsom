@@ -29,12 +29,6 @@ CUDA_LIBS = -lcuda -lcudart -lcublas
 # -- files --
 
 SOURCES += main.cpp \
-    core/write_ntf.cpp \
-    core/project.cpp \
-    core/wavefile.cpp \
-    core/som.cpp \
-    core/log.cpp \
-    core/data.cpp \
     mainwindow.cpp \
     projectview.cpp \
 #    waveview.cpp \
@@ -46,7 +40,14 @@ SOURCES += main.cpp \
     dataview.cpp \
     core/cudabackend.cpp \
     core/backend.cpp \
-    core/cpubackend.cpp
+    core/cpubackend.cpp \
+    core/write_ntf.cpp \
+    core/project.cpp \
+    core/wavefile.cpp \
+    core/som.cpp \
+    core/log.cpp \
+    core/data.cpp \
+    core/time.cpp
 
 HEADERS += \
     mainwindow.h \
@@ -57,6 +58,8 @@ HEADERS += \
     property.h \
     helpwindow.h \
     properties.h \
+    testcuda.h \
+    testsom.h \
     core/som.h \
     core/wavefile.h \
     core/write_ntf.h \
@@ -67,11 +70,10 @@ HEADERS += \
     dataview.h \
     core/som_types.h \
     core/cudabackend.h \
-    testcuda.h \
     core/cuda_util.h \
     core/backend.h \
     core/cpubackend.h \
-    testsom.h
+    core/time.h
 
 CUDA_SOURCES = \
     core/cudasom.cu
