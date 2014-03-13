@@ -18,6 +18,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
+#ifndef RSOM_NO_CUDA
+
 #ifndef CUDABACKEND_H
 #define CUDABACKEND_H
 
@@ -26,7 +28,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 
 namespace RSOM {
-
 
 /** Cuda backend for SOM class.
     See RSOM::Backend for documentation. */
@@ -113,3 +114,6 @@ public:
 } // namespace RSOM
 
 #endif // CUDABACKEND_H
+
+
+#endif //#ifndef RSOM_NO_CUDA

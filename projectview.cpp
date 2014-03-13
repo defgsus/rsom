@@ -693,8 +693,9 @@ bool ProjectView::loadData(/*const std::string& fn*/)
     somview_->setSom(0);
 
     //project_->data().maxObjects(7000);
-    if (!project_->data().addCsvFile("/home/defgsus/prog/DATA/golstat.txt")) return false;
-    //if (!project_->data().loadAsciiDir( fn.toStdString() )) return false;
+    //if (!project_->data().addCsvFile("/home/defgsus/prog/DATA/golstat.txt")) return false;
+    // [for starmaps]
+    if (!project_->data().loadAsciiDir( fn.toStdString() )) return false;
 
     project_->data().clamp(0, 60);
     project_->data().normalize();

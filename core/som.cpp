@@ -56,7 +56,10 @@ Som::Som(BackendType backend_type)
     switch (backend_type_)
     {
         case CPU:  backend_ = new CpuBackend(); break;
+#ifndef RSOM_NO_CUDA
         case CUDA: backend_ = new CudaBackend(512); break;
+#endif //#ifndef RSOM_NO_CUDA
+
     }
 }
 

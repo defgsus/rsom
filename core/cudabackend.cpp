@@ -18,16 +18,21 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
+#ifndef RSOM_NO_CUDA
+
 #include "cudabackend.h"
 
 #include <sstream>
 
-#include "log.h"
-#include "cuda_util.h"
+#ifndef RSOM_NO_CUDA
 
+    #include "log.h"
+    #include "cuda_util.h"
+#endif
 
 
 namespace RSOM {
+
 
 // forwards of kernel calls
 bool cudaSom_set(Float * map, Float * vec, Index mapw, Index maph, Index dim,
@@ -308,4 +313,8 @@ bool CudaBackend::debugFunc()
 
 }
 
+
 } // namespace RSOM
+
+
+#endif //#ifndef RSOM_NO_CUDA

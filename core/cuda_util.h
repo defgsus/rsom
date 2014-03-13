@@ -18,6 +18,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 ****************************************************************************/
 
+#ifndef RSOM_NO_CUDA
+
+
 #ifndef CUDA_UTIL_H
 #define CUDA_UTIL_H
 
@@ -98,3 +101,6 @@ I nextPow2( I x )
 
 
 #endif // CUDA_UTIL_H
+
+
+#endif // #ifndef RSOM_NO_CUDA

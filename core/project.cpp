@@ -43,7 +43,11 @@ Project::Project()
       som_search_radius_ (2.0),
 
       data_              (new Data),
+#ifndef RSOM_NO_CUDA
       som_               (new Som(Som::CUDA)),
+#else
+      som_               (new Som(Som::CPU)),
+#endif
       som_thread_        (0),
 
       run_som_           (false),

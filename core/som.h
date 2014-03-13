@@ -59,7 +59,9 @@ class Som
     enum BackendType
     {
         CPU,
+#ifndef RSOM_NO_CUDA
         CUDA
+#endif
     };
 
     /** One sample.

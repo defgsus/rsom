@@ -20,6 +20,7 @@
     copyright 2014 stefan.berke @ modular-audio-graphics.com
 */
 
+#ifndef RSOM_NO_CUDA
 
 #include <cuda.h>
 //#include <thrust/device_vector.h>
@@ -531,3 +532,6 @@ bool cudaSom_mult(Float * dst, Float * src1, Float * src2, Index size, Index thr
 
 
 } // namespace RSOM
+
+
+#endif //#ifndef RSOM_NO_CUDA

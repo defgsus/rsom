@@ -16,7 +16,7 @@ TEMPLATE  = app
 
 # -- flags --
 
-QMAKE_CXXFLAGS += -std=c++0x
+QMAKE_CXXFLAGS += -std=c++0x -DRSOM_NO_CUDA
 QMAKE_CXXFLAGS_RELEASE += -O2 -DNDEBUG
 
 # -- libs --
@@ -24,7 +24,7 @@ QMAKE_CXXFLAGS_RELEASE += -O2 -DNDEBUG
 windows: LIBS += -lsndfile-1
 else:    LIBS += -lsndfile
 
-CUDA_LIBS = -lcuda -lcudart -lcublas
+CUDA_LIBS = #-lcuda -lcudart -lcublas
 
 # -- files --
 
@@ -43,7 +43,7 @@ SOURCES += main.cpp \
     core/cpubackend.cpp \
     core/write_ntf.cpp \
     core/project.cpp \
-    core/wavefile.cpp \
+#    core/wavefile.cpp \
     core/som.cpp \
     core/log.cpp \
     core/data.cpp \
@@ -61,7 +61,7 @@ HEADERS += \
     testcuda.h \
     testsom.h \
     core/som.h \
-    core/wavefile.h \
+#    core/wavefile.h \
     core/write_ntf.h \
     core/project.h \
     core/log.h \
@@ -75,8 +75,8 @@ HEADERS += \
     core/cpubackend.h \
     core/time.h
 
-CUDA_SOURCES = \
-    core/cudasom.cu
+CUDA_SOURCES = #\
+ #   core/cudasom.cu
 
 RESOURCES += \
     resources.qrc
